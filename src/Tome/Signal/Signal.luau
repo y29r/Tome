@@ -1,5 +1,5 @@
 --!strict
--- Author : @bytenand (Git)
+-- Author : @y29r (Git)
 -- Date : 03(D)/10(M)/2024(Y)
 
 local HttpService = game:GetService("HttpService")

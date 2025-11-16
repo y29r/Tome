@@ -1,6 +1,6 @@
 --!strict
 --!native
--- Author : @bytenand (Git)
+-- Author : @y29r (Git)
 -- Date : 03(D)/10(M)/2024(Y)
 --[[
 	Dependencies:
