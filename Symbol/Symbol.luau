@@ -1,16 +1,12 @@
 --!strict
+-- Auth: @bytenand (Roblox) @y29r (Github)
+-- Date: December 2nd, 2025
+-- Deps: []
 
-local Symbol = {}
+local createSymbol = require("./createSymbol")
 
-function Symbol.new(name: string) : any
-	local proxy: any = newproxy(true)
-	local newSymbol: any = getmetatable(proxy)
-	
-	newSymbol.__tostring = function()
-		return string.format("Symbol(%*)", name)
-	end
-	
-	return proxy
-end
+local Symbol = {
+	createSymbol = createSymbol,
+}
 
 return Symbol

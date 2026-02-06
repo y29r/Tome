@@ -2,14 +2,21 @@
 
 local TweenType = require("./TweenType")
 local ThreadType = require("./ThreadType")
-local ThrowError = require("./ThrowError")
 local FunctionType = require("./FunctionType")
 
--- an easy object remover function which returns what function to call on the object itself
--- for custom removal such as promises, using a function for the second argument of :Add should be used,
--- otherwise it may be a better idea to edit the code below to adjust on how to destroy the custom object.
+local throwError = require("./throwError")
+
+--[[
+
+	@param object any
+	@return any
+
+	Returns a unique userdata or string to tell the Tome how to go about destroying the provided object
+	The provided statements below should be enough for most cases, but if needed pass the second arg of Tome:Add to destroy an object your own way
+
+]]
 return function(object: any) : any
-	local objectType = typeof(object)
+	local objectType: string = typeof(object)
 	
 	if objectType == "Instance" then
 		if object:IsA("Tween") then
@@ -33,6 +40,6 @@ return function(object: any) : any
 		end
 	end
 	
-	return ThrowError(string.format("Attempted to get a destroy method for object '%s', but no destroy method was found.", tostring(object)),
+	return throwError(string.format("Attempted to get a destroy method for object '%s', but no destroy method was found.", tostring(object)),
 		"Ensure any objects added into the Tome are destroyable. Or pass a custom destroyer function for the object as the second parameter in Tome:Add")
 end

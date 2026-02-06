@@ -2,12 +2,12 @@
 
 --[[
 	These are constants that are changeable before run time
-	Every tome will start with these static meta props, unless changed
+	Every Tome will start with these static meta props, unless changed
 	through passing a meta props table
 	
 	For secure parsing the recommended props are:
-		Fast = false,
-		FastDestroy = true,
+		FastAdd = true
+		SpawnDestroy = true,
 		Warnings = true,
 		Tagging = true,
 		UseParentMetaprops = true,
@@ -17,8 +17,8 @@
 ]]
 
 return {
-	Fast = true,
-	FastDestroy = true,
+	FastAdd = true,
+	SpawnDestroy = true,
 	Warnings = true,
 	Tagging = false,
 	UseParentMetaprops = true,

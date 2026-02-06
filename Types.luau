@@ -8,7 +8,7 @@ export type DestroyMethod = (
 	"cancel" |
 	"Disconnect" |
 	string
-)
+) | {}
 
 export type Promise = {
 	getStatus: (self: Promise) -> string,
@@ -16,34 +16,46 @@ export type Promise = {
 	cancel: (self: Promise) -> (),
 }
 
+export type RunServiceSignalName = "RenderStepped"
+| "Heartbeat"
+| "PostSimulation"
+| "PreAnimation"
+| "PreRender"
+| "PreSimulation"
+| "Stepped"
+
 export type TweenMetadata = {
 	Play: boolean?,
 	RemoveOnComplete: boolean?,
-	RemoveOnDestroy: boolean?,
 }
 
-export type CallbackData = {
-	synchronous: boolean?,
-	deferred: boolean?,
+export type OnDestroyCallbackData = {
+	OnDestroyParams: OnDestroyParams,
 	callback: (...any) -> (),
 }
 
+export type OnDestroyParams = {
+	Synchronous: boolean?,
+	Deferred: boolean?,
+	RemoveOnDestroy: boolean?,
+}
+
 export type Metaprops = {
-	Fast: boolean?,
-	FastDestroy: boolean?,
+	FastAdd: boolean?,
+	SpawnDestroy: boolean?,
 	Warnings: boolean?,
 	Tagging: boolean?,
 	UseParentMetaprops: boolean?,
 }
 
 export type Tome = {
-	__fast: boolean,
-	__fastDestroy: boolean,
+	__fastAdd: boolean,
+	__spawnDestroy: boolean,
 	__warnings: boolean,
 	__tagging: boolean,
 	
-	__pages: {},
-	__objects: {},
+	__pages: {[string?]: Tome},
+	__objects: {[any]: DestroyMethod},
 	
 	__destroying: boolean,
 	__name: string?,
@@ -61,6 +73,7 @@ export type Tome = {
 	Rename: (self: Tome, name: string?) -> Tome,
 	
 	Add: <object>(self: Tome, object: object, destroyMethod: DestroyMethod?) -> object,
+	AddWithMiddleware: <object>(self: Tome, object: object, middleware: (object: object, complete: () -> ()) -> (), destroyMethod: DestroyMethod?) -> object,
 	FastAdd: <object>(self: Tome, object: object, destroyMethod: DestroyMethod?) -> object,
 	AddTuple: <object...>(self: Tome, object...) -> object...,
 	AddFromArray: <objectsArray>(self: Tome, objectsArray: objectsArray) -> objectsArray,
@@ -71,23 +84,23 @@ export type Tome = {
 	Clone: (self: Tome, object: any, extendFunctionName: string?) -> any,
 	Instance: (self: Tome, instanceName: string, properties: {[string]: any}?) -> Instance,
 	FromExisting: (self: Tome, instance: Instance) -> Instance,
-	Attach: (self: Tome, object: any) -> (RBXScriptSignal | () -> ())?,
+	Attach: (self: Tome, object: any) -> () -> (),
 	
-	RenderStepped: (self: Tome, listener: (deltaTime: number) -> ()) -> RBXScriptConnection,
+	HookRunServiceSignal: (self: Tome, signalName: RunServiceSignalName, listener: (deltaTime: number) -> () | (time: number, deltaTime: number) -> ()) -> RBXScriptConnection,
 	BindRenderStepped: (self: Tome, name: string, renderPriority: number?, listener: (deltaTime: number) -> ()) -> () -> (),
 	UnbindRenderStepped: (self: Tome, name: string) -> (),
-	Heartbeat: (self: Tome, listener: (deltaTime: number) -> ()) -> RBXScriptConnection,
 	
-	Delay: (self: Tome, duration: number, listener: (...any) -> (...any), ...any) -> thread,
-	Spawn: (self: Tome, listener: (...any) -> (...any), ...any) -> thread,
-	Defer: (self: Tome, listener: (...any) -> (...any), ...any) -> thread,
+	Delay: <vargs>(self: Tome, duration: number, listener: (...vargs) -> ...any, ...vargs) -> thread,
+	Spawn: <vargs>(self: Tome, listener: (...vargs) -> ...any, ...vargs) -> thread,
+	Defer: <vargs>(self: Tome, listener: (...vargs) -> ...any, ...vargs) -> thread,
+	Yield: (self: Tome, thread: thread?) -> (),
 	
-	Find: (self: Tome, object: any) -> boolean,
+	Contains: (self: Tome, object: any) -> boolean,
 	Has: (self: Tome, object: any) -> boolean,
 	
 	Signal: (self: Tome) -> any,
 	
-	Table: (self: Tome, existing: {}?) -> {},
+	Table: (self: Tome, existing: {[any]: any}?) -> {[any]: any},
 	
 	Tween: (
 		self: Tome,
@@ -101,7 +114,7 @@ export type Tome = {
 	RemoveTuple: <T...>(self: Tome, T...) -> T...,
 	RemoveFromArray: <objectsArray>(self: Tome, objectsArray: objectsArray) -> objectsArray,
 	RemoveObjectsWithTag: (self: Tome, tag: string) -> (),
-	RemoveObjectsOfClass: (self: Tome, className: string) -> (),
+	RemoveObjectsOfType: (self: Tome, typeName: string) -> (),
 	Connect: (self: Tome, signal: any, listener: (...any) -> (...any)) -> any,
 	Once: (self: Tome, signal: any, listener: (...any) -> (...any)) -> any,
 	
@@ -120,13 +133,13 @@ export type Tome = {
 	
 	GetParentTome: (self: Tome) -> Tome?,
 	GetObjects: (self: Tome) -> {[any]: any},
-	GetObjectsOfClass: (self: Tome, className: string) -> {any},
+	GetObjectsOfType: (self: Tome, typeName: string) -> {any},
 	GetObjectsWithTag: (self: Tome, tag: string) -> {any},
 	
 	Count: (self: Tome) -> number,
 	
 	DestroyObjectsWithTag: (self: Tome, tag: string) -> (),
-	DestroyObjectsOfClass: (self: Tome, className: string) -> (),
+	DestroyObjectsOfType: (self: Tome, typeName: string) -> (),
 	DestroyObject: (self: Tome, object: any) -> (),
 	DestroyObjects: (self: Tome, ...any) -> (),
 	DestroyAllObjects: (self: Tome, __ignoreDestroyingProperty: boolean?) -> (),
@@ -137,15 +150,14 @@ export type Tome = {
 	Destroy: (self: Tome, ...any) -> (),
 	DelayDestroy: (self: Tome, duration: number) -> thread,
 	WrapDestroy: (self: Tome) -> () -> (),
-	OnDestroy: (self: Tome, callback: (...any) -> (), synchronous: boolean?, deferred: boolean?) -> () -> (),
+	OnDestroy: (self: Tome, callback: (...any) -> (), onDestroyParams: OnDestroyParams?) -> () -> (),
 	
 	__connectTagRemoved: (self: Tome) -> (),
 	__disconnectTagRemovedConnection: (self: Tome) -> (),
-	__getTagRemovedConnection: (self: Tome) -> RBXScriptConnection?,
 	
 	__findPage: (self: Tome, pageToFind: Tome) -> (Tome?, Tome?),
 	__getLastParentTome: (self: Tome) -> Tome?,
 	__remove: <object>(self: Tome, object: object) -> object,
 }
 
-return table.freeze({})
+return false

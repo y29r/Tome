@@ -2,4 +2,4 @@
 
 local Symbol = require("./Symbol/Symbol")
 
-return Symbol.new("Tome(ThreadType)")
+return Symbol.createSymbol("Tome(ThreadType)")

@@ -1,6 +1,16 @@
 --!strict
 
-return function(message: string, fix: string?) : ()
+--[[
+
+	@param message string
+	@param fix string?
+	@return void
+
+	Forcefully throws an error to the output using a prettier formatting.
+	An optional fix argument can be passes to let writers potentially understand why something isn't working
+	
+]]
+return function(message: string, fix: string?) : any
 	local traceback: string = debug.traceback()
 	
 	local callStack: {string} = {}

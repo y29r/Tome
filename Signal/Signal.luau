@@ -1,10 +1,14 @@
 --!strict
--- Author : @y29r (Git)
--- Date : 03(D)/10(M)/2024(Y)
+-- Auth: @bytenand (Roblox) @y29r (Github)
+-- Date: December 2nd, 2025
+-- Deps: []
 
 local HttpService = game:GetService("HttpService")
 
 local Types = require("./Types")
+
+export type Signal = Types.Signal
+export type Connection = Types.Connection
 
 local Connection = {}
 Connection.__index = Connection
@@ -286,7 +290,7 @@ function Signal:Wait(listener: Types.SignalListener?) : ...any
 	if listener then
 		self.__waitingListeners[listener] = currentThread
 	else
-		self.__waitingListeners[HttpService:GenerateGUID(false)] = currentThread
+		self.__waitingListeners[HttpService:GenerateGUID(false) :: any] = currentThread
 	end
 	
 	return coroutine.yield()

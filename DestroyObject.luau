@@ -7,6 +7,16 @@ local FunctionType = require("./FunctionType")
 
 local THREAD_DEAD_STATE: string = "dead"
 
+--[[
+
+	@param object any
+	@param destroyMethod Types.DestroyMethod
+	@return void
+
+	Destroys the provide object with the given destroy method.
+	If a function is used as the destroy method, it will call itself inside a safe scope and pass the object as the first argument
+	
+]]
 return function(object: any, destroyMethod: Types.DestroyMethod) : ()
 	if type(destroyMethod) == "function" then
 		return destroyMethod(object)
@@ -19,7 +29,6 @@ return function(object: any, destroyMethod: Types.DestroyMethod) : ()
 		object:Destroy()
 	elseif destroyMethod == ThreadType then
 		--TODO: Manage other thread states and perhaps allow for something more flexible and robust
-		-- thread states: "dead", "suspended", "normal", "running"
 		local threadStatus = coroutine.status(object)
 		
 		if threadStatus ~= THREAD_DEAD_STATE then

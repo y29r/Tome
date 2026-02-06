@@ -1,15 +1,34 @@
 --!strict
 --!native
--- Author : @y29r (Git)
--- Date : 03(D)/10(M)/2024(Y)
---[[
-	Dependencies:
-		- Signal (only v1.2a-7 and below)
-		- TableUtility (only v1.2a-7 and below)
-		- Symbol (only v1.2a-7 and below)
-]]
+-- Auth: @bytenand (Roblox) @y29r (Github)
+-- Date: October 3rd, 2025
+-- Deps: [Signal, Symbol]
 -- A basic clean up module to handle Instances, custom classes and function clean ups.
 --[[
+	v1.2.c-4:
+		Made a small optimization to Tome:Tween
+		Fixed typing for Tome:SetTag
+		Tome:SetTag now disconnects the tag listener connection when no tag for the Tome exists
+
+	v1.2.c-3:
+		Types can now be fetched from Tome directly.
+		Resolves double requiring and reduces write count:
+		```luau
+		local Tome = require("../Path/To/Tome")
+		local TomeTypes = require("../Path/To/Types")
+		```
+		Added more detailed attribute tags to methods within comments
+		Fixed Tome:Instance not throwing its warning for invalid properties
+		Tome:Attach now returns nil if the provided object is an instance which is unparented
+		Superseded Tome:Heartbeat and Tome:RenderStepped with Tome:HookRunServiceSignal
+		Improved comment documentation across all methods
+		Optimized methods by preproviding destroy methods to known object types
+		Removed the RemoveOnDestroy metadata for Tome:Tween
+		Updated Tome:OnDestroy to use params instead of passing magic args
+		Tome.version -> Tome.VERSION
+		Improved performance of Tome:Move
+		Renamed FastDestroy -> SpawnDestroy
+
 	v1.2.c-2:
 		Fixed a few typos with types
 		Unburrowed the modules under Tome to be inside the primary folder
@@ -63,7 +82,7 @@
 			Tome:Delay
 			Tome:Defer
 			
-			```lua
+			```luau
 			local function foo(bar: string) : string
 				return bar
 			end
@@ -144,18 +163,18 @@
 	Tome:DestroyObject : Destroys the provided object if it exists within the Tome.
 	Tome:DestroyObjects : Destroys the provided objects if they exists within the Tome.
 	Tome:DestroyObjectsWithTag : Destroys all the objects in the Tome that have the specified tag.
-	Tome:DestroyObjectsOfClass : Destroys all the objects in the Tome that have the specified class name.
-	Tome:Find : Returns whether the specified object exists within the Tome.
-	Tome:Has : Alias for Tome:Find.
+	Tome:DestroyObjectsOfType : Destroys all the objects in the Tome that have the specified type.
+	Tome:Contains : Returns whether the specified object exists within the Tome.
+	Tome:Has : Alias for Tome:Contains.
 	Tome:FromExisting : Creates an Instance with Instance.fromExisting and adds it to the Tome.
 	Tome:GetObjects : Returns all the objects contained within the Tome.
 	Tome:GetObjectsWithTag : Returns all the objects contained within the Tome that contain a provided tag.
-	TOme:GetObjectsOfClass : Returns all the objects of a specified class name.
+	TOme:GetObjectsOfType : Returns all the objects of a specified type name.
 	Tome:GetPage : Returns a Page from the Tome given a name.
 	Tome:GetParentTome : Gets the parent Tome (if it has one)
 	Tome:GetTag : Returns the internal tag the Tome uses to automatically remove destroyed instances.
 	Tome:GivePage : Moves a Page to another Tome or Page.
-	Tome:Heartbeat : Connects to the RunService.Heartbeat Signal and adds it to the Tome.
+	Tome:HookRunServceSignal : Connects to any of the RunService signals given a name
 	Tome:Instance : Creates an Instance with Instance.new and adds it to the Tome.
 	Tome:IsDestroying : Returns whether the Tome is currently destroying or not.
 	Tome:Move : Moves an object from the current Tome to another.
@@ -164,16 +183,15 @@
 	Tome:RemoveTuple : Removes multiple objects from the Tome.
 	Tome:RemoveFromArray : Removes objects from an array of objects from the Tome.
 	Tome:RemoveObjectsWithTag : Removes objects with a specified tag from the Tome.
-	Tome:RemoveObjectsOfClass : Removes objects of a specified class from the Tome.
+	Tome:RemoveObjectsOfType : Removes objects of a specified type from the Tome.
 	Tome:Rename : Renames the Tome.
-	Tome:RenderStepped : Connects to the RunService.RenderStepped Signal and adds it to the Tome.
 	Tome:RipPage : Destroys the provided page and removes it from the Tome.
 	Tome:RipPages : Destroys and removes all the Pages within a Tome.
 	Tome:SetTag : Overrides the default Tome tag used for Instances.
 	Tome:Signal : Constructs a standard Signal class and adds it to the Tome.
 	Tome:UnbindRenderStepped : Unbinds a binding made with Tome:BindRenderStepped.
 	Tome:Tween : Tweens an object and adds the Tween to the Tome.
-	Tome:Table : Adds a table inside the Tome using Tome.ClearTable as the destroy method.
+	Tome:Table : Adds a table inside the Tome and using table.clear as the destroy method
 	Tome:OnDestroy : Attaches a callback that listens for when the Tome destroys.
 	
 	Standard supported objects:
@@ -195,12 +213,10 @@
 		Metaprops is a table that can be passed when constructing a Tome. Metaprops modifies how the
 		Tome works. For example, the 'Fast' metaprop will ignore specific statements which results in much
 		greater method speeds. See below for a list of metaprops:
-		
-			'Fast' : boolean : Increases the speed of the Tome:Add method significantly. (Between 10-200 times faster)
-			'FastDestroy' : boolean : Calls the destroy method of every object in a new thread; essentially multithreading.
+			'FastAdd' : boolean : Skips sanity checks when adding objects with Tome:Add
+			'SpawnDestroy' : boolean : Calls the destroy method of every object in a new thread.
 			'Warnings' : boolean : Whether warnings will appear in the output. Errors will not be affected.
 			'Tagging' : boolean : Whether to use the tagging system for Instances.
-			'Mode' : string : If specified, the objects table will use a metatable with the __mode set to the provided mode. Either "keys", "values", "paired" or "none".
 			'UseParentMetaprops' : boolean : If this prop is true, all Pages created under the Tome will automatically define the same metaprops as its parent
 				This includes deeply nested Tomes with more complex architecture.
 		
@@ -210,86 +226,102 @@
 		
 ]]
 
-local Types = require("./Types")
+local Types: boolean = require("./Types")
 
-local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
-local TweenService = game:GetService("TweenService")
-local CollectionService = game:GetService("CollectionService")
+export type Tome = Types.Tome
+export type Metaprops = Types.Metaprops
+export type DestroyMethod = Types.DestroyMethod
+export type RunServiceSignalName = Types.RunServiceSignalName
+export type OnDestroyParams = Types.OnDestroyParams
+export type OnDestroyCallbackData = Types.OnDestroyCallbackData
+
+local RunService: RunService = game:GetService("RunService")
+local HttpService: HttpService = game:GetService("HttpService")
+local TweenService: TweenService = game:GetService("TweenService")
+local CollectionService: CollectionService = game:GetService("CollectionService")
 
 local Static = require("./Static")
 
--- need to explicitly define the error message itself as the type, or string.format complains
+local TweenType = require("./TweenType")
+local ThreadType = require("./ThreadType")
+local FunctionType = require("./FunctionType")
+
+-- current hotfix to fix the new type solver crying about string formatting
 local TOME_IS_DESTROYING_ERROR_MESSAGE: "Attempted to '%s' while the current Tome is in the middle of being destroyed."
 	= "Attempted to '%s' while the current Tome is in the middle of being destroyed."
 
--- extension method names for classes that may be called on
+-- extension method names for classes that may be invoked on when calling Tome:Clone
 local EXTENSION_METHOD_NAMES: {string} = { "clone", "Clone", "extend", "Extend" }
 
-local function fetchDependency(dependencyPath: string, dependencyName: string) : (boolean, any)
-	local successfullyFetchedDependency, dependency = pcall(function()
-		return (require)(dependencyPath)
-	end)
-	if not successfullyFetchedDependency then
-		warn(string.format([[
-		Tome: The dependency '%*' must be installed for Tome to run properly.
-		For more information take a look at the dependencies that Tome needs.
-		
-		Issue: %*
-	]], dependencyName, dependency))
-	end
-	
-	return successfullyFetchedDependency, dependency
-end
+local Signal = require("./Signal/Signal")
 
-local _signalExists, Signal = fetchDependency("./Signal/Signal", "Signal")
-local _tableUtilityExists, TableUtility = fetchDependency("./TableUtility/TableUtility", "TableUtility")
-
-local ThrowError = require("./ThrowError")
-local RealTypeOf = require("./RealTypeOf")
-local DestroyObject = require("./DestroyObject")
-local GetDestroyMethodForObject = require("./GetDestroyMethodForObject")
-local FailedToDestroyObject = require("./FailedToDestroyObject")
+local throwError = require("./throwError")
+local realTypeOf = require("./realTypeOf")
+local destroyObject = require("./destroyObject")
+local getDestroyMethodForObject = require("./getDestroyMethodForObject")
+local failedToDestroyObject = require("./failedToDestroyObject")
 
 local Tome = {}
 Tome.__index = Tome
 Tome.__type = "Tome"
 
-Tome.version = require("./VERSION")
+Tome.TweenType = TweenType
+Tome.ThreadType = ThreadType
+Tome.FunctionType = FunctionType
+
+Tome.VERSION = require("./VERSION")
+
+-- Tome.__tostring = function(self: Tome)
+-- 	local objects: {[any]: DestroyMethod} = self.__objects
+
+-- 	local objectsPrint: string = ""
+-- 	for object: any, destroyMethod: DestroyMethod in objects do
+-- 		objectsPrint ..= typeof(object) .. "(" .. tostring(object) .. ")" .. ", "
+-- 	end
+
+-- 	return string.format([[
+
+-- 		Tome(%*)
+-- 		[Objects]: {%*}
+-- 	]], self.__name or "Blank", objectsPrint)
+-- end
+
+local DEFAULT_SPAWN_DESTROY: boolean = Static.SpawnDestroy
+local DEFAULT_FAST_ADD: boolean = Static.FastAdd
+local DEFAULT_WARNINGS: boolean = Static.Warnings
+local DEFAULT_TAGGING: boolean = Static.Tagging
+local DEFAULT_USE_PARENT_METAPROPS: boolean = Static.UseParentMetaprops
 
 --[[
 	
-	Tome.new(metadata: TomeMetaprops?) : Tome
+	@param metaprops Metaprops
+	@return Tome
 	
 	Constructs and returns a new Tome object.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	-- add a cube to the new Tome
-	someTome:Add(workspace.Cube)
+	scopeTome:Add(workspace.Cube)
 	
 	-- destroys the Tome as well as the cube
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
-local DEFAULT_FAST = Static.Fast
-local DEFAULT_FAST_DESTROY = Static.FastDestroy
-local DEFAULT_WARNINGS = Static.Warnings
-local DEFAULT_TAGGING = Static.Tagging
-local DEFAULT_USE_PARENT_METAPROPS = Static.UseParentMetaprops
-function Tome.new(metaprops: Types.Metaprops?) : Types.Tome
-	local FAST: boolean? = metaprops and metaprops.Fast
+function Tome.new(metaprops: Types.Metaprops?) : Tome
+	local FAST_ADD: boolean? = metaprops and metaprops.FastAdd
 	local TAGGING: boolean? = metaprops and metaprops.Tagging
 	local WARNINGS: boolean? = metaprops and metaprops.Warnings
-	local FAST_DESTROY: boolean? = metaprops and metaprops.FastDestroy
+	local SPAWN_DESTROY: boolean? = metaprops and metaprops.SpawnDestroy
 	local USE_PARENT_METAPROPS: boolean? = metaprops and metaprops.UseParentMetaprops
 	
 	local self = setmetatable({
-		__fast = if type(FAST) == "boolean" then FAST else DEFAULT_FAST,
-		__fastDestroy = if type(FAST_DESTROY) == "boolean" then FAST_DESTROY else DEFAULT_FAST_DESTROY,
+		__fastAdd = if type(FAST_ADD) == "boolean" then FAST_ADD else DEFAULT_FAST_ADD,
+		__spawnDestroy = if type(SPAWN_DESTROY) == "boolean" then SPAWN_DESTROY else DEFAULT_SPAWN_DESTROY,
 		__warnings = if type(WARNINGS) == "boolean" then WARNINGS else DEFAULT_WARNINGS,
 		__tagging = if type(TAGGING) == "boolean" then TAGGING else DEFAULT_TAGGING,
 		__pages = {},
@@ -303,28 +335,39 @@ function Tome.new(metaprops: Types.Metaprops?) : Types.Tome
 		__destroyCallbacks = {},
 	}, Tome) :: any
 	
-	return self :: Types.Tome
+	return self
 end
 
 --[[
 	
-	Tome:SetTag(tag: string) : Tome
+	@within Tome
+	@param tag string?
+	@return Tome
 	
 	Overrides the tome tag and updates any instances with the original tag. This doesn't serve much purpose, but
 	perhaps in the future it may.
+
+	Providing the tag argument with nil will remove the tag and any connections associated with that tag
+	within the Tome.
+
+	Returns the same Tome to allow recursive invoking
 	
 ]]
-function Tome:SetTag(tag: string) : Types.Tome
+function Tome:SetTag(tag: string?) : Tome
 	assert(type(tag) == "string", "Tome:SetTag tag argument must be a string type.")
 	
 	local oldTag: string? = self:GetTag()
 	if oldTag then
-		for index, instance in CollectionService:GetTagged(oldTag) do
+		for index: number, instance: Instance in CollectionService:GetTagged(oldTag) do
 			instance:RemoveTag(oldTag)
 			instance:AddTag(tag)
 		end
 	end
 	
+	if not tag then
+		return self:__disconnectTagRemovedConnection()
+	end
+
 	self.__tomeTag = tag
 	
 	return self
@@ -332,7 +375,8 @@ end
 
 --[[
 	
-	Tome:GetTag() : string?
+	@within Tome
+	@return string?
 	
 	Returns the tag the Tome uses to remove referenced instances. Typically this is only used
 	internally, but this may come in helpful within the future.
@@ -344,15 +388,16 @@ end
 
 --[[
 	
-	Tome:__connectTagRemoved() : ()
+	@within Tome
+	@return void
 	
 	An internal method used to bind the "tag removed" connection. This method
-	shouldn't be called outside this scope.
+	shouldn't be called outside this prototype.
 	
 ]]
 function Tome:__connectTagRemoved() : ()
-	local tagRemovedConnection: RBXScriptConnection? = self:__getTagRemovedConnection()
-	if tagRemovedConnection then
+	local tagRemovedConnection: RBXScriptConnection? = self.__tagRemovedConnection
+	if tagRemovedConnection and tagRemovedConnection.Connected then
 		return
 	end
 	
@@ -361,7 +406,7 @@ function Tome:__connectTagRemoved() : ()
 		return
 	end
 	
-	local function instanceRemoved(instance: Instance)
+	local function instanceRemoved(instance: Instance) : ()
 		self.__objects[instance] = nil
 		
 		local objectExists: {Instance} = CollectionService:GetTagged(tomeTag)
@@ -370,53 +415,42 @@ function Tome:__connectTagRemoved() : ()
 		end
 	end
 	
-	rawset(self, "__tagRemovedConnection", CollectionService:GetInstanceRemovedSignal(tomeTag):Connect(instanceRemoved))
+	self.__tagRemovedConnection = CollectionService:GetInstanceRemovedSignal(tomeTag):Connect(instanceRemoved)
 end
 
 --[[
 	
-	Tome:__disconnectTagRemovedConnection() : ()
+	@within Tome
+	@return void
 	
-	An internal method used to unbind/disconnect the "tag removed" connection. This method
-	shouldn't be called outside this scope.
+	An internal method used to disconnect the "tag removed" connection. This method
+	shouldn't be called outside this prototype.
 	
 ]]
 function Tome:__disconnectTagRemovedConnection() : ()
-	local tagRemovedConnection: RBXScriptConnection? = self:__getTagRemovedConnection()
-	if tagRemovedConnection then
+	local tagRemovedConnection: RBXScriptConnection? = self.__tagRemovedConnection
+	if tagRemovedConnection and tagRemovedConnection.Connected then
 		tagRemovedConnection:Disconnect()
 		
-		rawset(self, "__tagRemovedConnection", nil)
+		self.__tagRemovedConnection = nil
 	end
 end
 
 --[[
 	
-	Tome:__getTagRemovedConnection() : RBXScriptConnection?
-	
-	Returns the state of the "tag removed" connection. This method shouldn't be
-	called outside this scope.
-	
-]]
-function Tome:__getTagRemovedConnection() : RBXScriptConnection?
-	-- explicitly annotate the connection so rawget doesn't complain
-	return rawget(self, "__tagRemovedConnection") :: RBXScriptConnection?
-end
-
---[[
-	
-	Tome:Rename(name: string) : Tome
+	@within Tome
+	@param name string?
+	@return Tome
 	
 	Renames the Tome. Throwns an error if the name argument isn't a string type, or nil.
 	If the name argument provided is nil, it will erase the name property from the Tome.
 	
 	Typically this isn't useful and is really only used internally to manage Pages between
-	other Tomes.
+	other Tomes. Though useful for debugging.
 	
 ]]
-function Tome:Rename(name: string?) : Types.Tome
-	local nameType: string = type(name)
-		assert(nameType == "string" or nameType == nil, "Tome:Rename name argument must be a string type, or nil.")
+function Tome:Rename(name: string?) : Tome
+	assert(type(name) == "string" or name == nil, "Tome:Rename name argument must be a string type, or nil.")
 	
 	self.__name = name
 	
@@ -425,7 +459,10 @@ end
 
 --[[
 	
-	Tome:AddPage(name: string?) -> Tome
+	@within Tome
+	@param name string?
+	@param metaprops Metaprops?
+	@return Tome
 	
 	Constructs a Tome Page, also just referred to as a Page. A Page is similar to an
 	extension method for any class; where the class constructs itself and mounts the
@@ -444,36 +481,37 @@ end
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	-- construct a new Page for the Tome
-	local somePage = someTome:AddPage()
+	local somePage = scopeTome:AddPage()
 	
 	-- add an apple to the Page
 	somePage:Add(workspace.Apple)
 	
 	-- add a banana to the Tome
-	someTome:Add(workspace.Banana)
+	scopeTome:Add(workspace.Banana)
 	
 	-- destroys both the apple, and banana as the Page also gets destroyed
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	-- construct a new Page for the Tome with a provided name
-	someTome:AddPage("SomeName")
+	scopeTome:AddPage("SomeName")
 	
 	-- get the Page by name
-	local somePage = someTome:GetPage("SomeName")
+	local somePage = scopeTome:GetPage("SomeName")
 	```
 	
 ]]
-function Tome:AddPage(name: string?, metaprops: Types.Metaprops?) : Types.Tome
+function Tome:AddPage(name: string?, metaprops: Types.Metaprops?) : Tome
 	assert(type(name) == "string" or name == nil, "Tome:AddPage name argument must be a string type, or nil.")
 	
 	if self:IsDestroying() then
@@ -484,55 +522,56 @@ function Tome:AddPage(name: string?, metaprops: Types.Metaprops?) : Types.Tome
 		name = HttpService:GenerateGUID(false)
 	end
 	
-	local page: Types.Tome? = self.__pages[name]
+	local page: Tome? = self.__pages[name]
 	if page then
-		ThrowError("Attempted to add a Page that already exists with the given name.")
+		throwError("Attempted to add a Page that already exists with the given name.")
 	end
 	
-	local newMetaprops: Types.Metaprops? = nil
+	local newMetaprops: Types.Metaprops = {}
 	if not metaprops and self.__useParentMetaprops then
-		local fast: boolean = self.__fast
-		local fastDestroy: boolean = self.__fastDestroy
-		local warnings: boolean = self.__warnings
-		local tagging: boolean = self.__tagging
-		local useParentMetaprops: boolean = self.__useParentMetaprops
+		local FAST_ADD: boolean = self.__fastAdd
+		local SPAWN_DESTROY: boolean = self.__spawnDestroy
+		local WARNINGS: boolean = self.__warnings
+		local TAGGING: boolean = self.__tagging
+		local USE_PARENT_METAPROPS: boolean = self.__useParentMetaprops
 		
 		newMetaprops = {
-			Fast = fast,
-			FastDestroy = fastDestroy,
-			Warnings = warnings,
-			Tagging = tagging,
-			UseParentMetaprops = useParentMetaprops,
+			FastAdd = FAST_ADD,
+			SpawnDestroy = SPAWN_DESTROY,
+			Warnings = WARNINGS,
+			Tagging = TAGGING,
+			UseParentMetaprops = USE_PARENT_METAPROPS,
 		}
 	end
 	
-	local newPage: Types.Tome = Tome.new(newMetaprops)
+	local newPage: Tome = Tome.new(newMetaprops)
 	newPage:Rename(name)
-	newPage.__parentTome = self
+	newPage.__parentTome = self :: Tome
 	
 	self.__pages[name] = newPage
 	
 	return newPage
 end
 
--- synonyms for the nesting more Tomes
--- primarily from older versions of the module
+-- backwards compatability for other modules (and earlier versions of the module)
 Tome.extend = Tome.AddPage
 Tome.Extend = Tome.AddPage
 
 --[[
 	
-	Tome:__findPage(pageToFind) : (Tome, Tome)?
+	@within Tome
+	@param pageToFind Tome
+	@return (Tome?, Tome?)
 	
 	Attempts to find a particular Page with a deep search of all Pages and sub Pages.
-	This is an internal method and shouldn't be used outside this scope. Use Tome:GetPage
+	This is an internal method and shouldn't be used outside this prototype. Use Tome:GetPage
 	to acquire a Page instead.
 	
 ]]
-function Tome:__findPage(pageToFind: Types.Tome) : (Types.Tome?, Types.Tome?)
+function Tome:__findPage(pageToFind: Tome) : (Tome?, Tome?)
 	local subPages: {any} = {}
 	
-	for _: string, page: Types.Tome in self.__pages do
+	for _: string, page: Tome in self.__pages do
 		if page == pageToFind then
 			return page, self
 		end
@@ -540,50 +579,53 @@ function Tome:__findPage(pageToFind: Types.Tome) : (Types.Tome?, Types.Tome?)
 		table.insert(subPages, page)
 	end
 	
-	for _, page: Types.Tome in subPages do
-		local pageFound: Types.Tome? = page:__findPage(pageToFind)
+	for _, page: Tome in subPages do
+		local pageFound: Tome? = page:__findPage(pageToFind)
 		if pageFound then
 			return pageFound, page
 		end
 	end
 	
-	return
+	return nil, nil
 end
 
 --[[
 	
-	Tome:GetParentTome() : Tome?
+	@within Tome
+	@return Tome?
 	
-	Returns the parent Tome of the Tome.
+	Returns the parent Tome of this Tome.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	local somePage = someTome:AddPage()
+	local somePage = scopeTome:AddPage()
 	
-	print(someTome:GetParentTome()) -> ()
-	print(somePage:GetParentTome()) -> Tome (someTome)
+	print(scopeTome:GetParentTome()) -> ()
+	print(somePage:GetParentTome()) -> scopeTome
 	```
 	
 ]]
-function Tome:GetParentTome() : Types.Tome?
+function Tome:GetParentTome() : Tome?
 	return self.__parentTome
 end
 
 --[[
 	
-	Tome:__getLastParentTome() : Tome?
+	@within Tome
+	@return Tome
 	
-	Returns the true parent of the Tome.
+	Returns the highest ancestor of a chain of Tomes
 	
-	This is an internal method that shouldn't be used outside this scope.
+	This is an internal method that shouldn't be used outside this prototype.
 	
 ]]
-function Tome:__getLastParentTome() : Types.Tome?
-	local parentTome: Types.Tome? = self:GetParentTome()
+function Tome:__getLastParentTome() : Tome?
+	local parentTome: Tome? = self:GetParentTome()
 	if parentTome then
-		local lastParent: Types.Tome? = nil
+		local lastParent: Tome? = nil
 		
 		while parentTome ~= nil do
 			lastParent = parentTome
@@ -598,7 +640,9 @@ end
 
 --[[
 	
-	Tome:RipPage(name: string | Tome) -> ()
+	@within Tome
+	@param nameOrPage string | Tome
+	@return void
 	
 	Destroys a Page within the Tome. The nameOrPage argument can take in a
 	string or Tome type (a Page) If a Page is provided. The Tome will scan
@@ -614,32 +658,34 @@ end
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
 	
-	local somePage = someTome:AddPage("SomePage")
+	local scopeTome = Tome.new()
 	
-	print(someTome:GetPage("SomePage")) -> Page (somePage)
+	local somePage = scopeTome:AddPage("Demonstration")
 	
-	someTome:RipPage(somePage)
+	print(scopeTome:GetPage("Demonstration")) -> Page(somePage)
 	
-	print(someTome:GetPage("SomePage")) -> ()
+	scopeTome:RipPage(somePage)
+	
+	print(scopeTome:GetPage("Demonstration")) -> nil -- the page has been completely erased
 	```
 	
 ]]
-function Tome:RipPage(nameOrPage: string | Types.Tome) : ()
-	local nameOrPageType: string = RealTypeOf(nameOrPage)
-		assert(nameOrPageType == "string" or nameOrPageType == "Tome", "Tome:RipPage nameOrPage argument must be a string or Tome type.")
+function Tome:RipPage(nameOrPage: string | Tome) : ()
+	local nameOrPageType: string = realTypeOf(nameOrPage)
+	assert(nameOrPageType == "string" or nameOrPageType == "Tome", "Tome:RipPage nameOrPage argument must be a string or Tome type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "rip Page from the Tome"))
 	end
 	
 	if nameOrPageType == "Tome" then
-		local page: Types.Tome?, parentPage: Types.Tome? = self:__findPage(nameOrPage)
+		local page: Tome?, parentPage: Tome? = self:__findPage(nameOrPage)
 		if not page or not parentPage then
-			return ThrowError("Attempted to rip a Page that doesn't exist. Profiled using recursion")
+			return throwError("Attempted to rip a Page that doesn't exist. Profiled using recursion")
 		end
 		
 		page:Destroy()
@@ -652,9 +698,9 @@ function Tome:RipPage(nameOrPage: string | Types.Tome) : ()
 		return
 	end
 	
-	local page: Types.Tome? = self.__pages[nameOrPage]
+	local page: Tome? = self.__pages[nameOrPage]
 	if not page then
-		return ThrowError("Attempted to rip a Page that doesn't exist. Profiled using a string")
+		return throwError("Attempted to rip a Page that doesn't exist. Profiled using a string")
 	end
 	
 	self.__pages[nameOrPage] = nil
@@ -664,10 +710,24 @@ end
 
 --[[
 	
-	Tome:RipPages() : ()
+	@within Tome
+	@return void
 	
 	Rips all the Pages contained within the Tome. Useful when needing
-	to dispose of  Pages that don't need to occupy the Tome anymore.
+	to dispose of Pages that don't need to occupy the Tome anymore.
+
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+
+	local scopeTome = Tome.new()
+	
+	local somePage = scopeTome:AddPage("Demonstration")
+
+	scopeTome:RipPages()
+
+	print(scopeTome:GetPage("Demonstration")) -> nil -- the page has been completely erased
+	```
 	
 ]]
 function Tome:RipPages() : ()
@@ -678,15 +738,32 @@ end
 
 --[[
 	
-	Tome:GetPage(name: string) -> Tome?
+	@within Tome
+	@param name string
+	@return Tome?
 	
 	Attempts to return a Page from a given name. Typically useful when a Tome is shared
 	among other scripts, and in some cases fetching a specific Page may be necessary.
 	
 	Will throw an error if the Tome is in the middle being destroyed.
 	
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+
+	local scopeTome = Tome.new()
+	
+	-- we need to access 'somePage' which is contained within another scope
+	do
+		local somePage = scopeTome:AddPage("Demonstration")
+	end
+	
+	local somePage = scopeTome:GetPage("Demonstration")
+	print(somePage) -> Page(somePage)
+	```
+
 ]]
-function Tome:GetPage(name: string) : Types.Tome?
+function Tome:GetPage(name: string) : Tome?
 	assert(type(name) == "string", "Attempted to acquire a Page, however the name argument provided wasn't a string type")
 	
 	if self:IsDestroying() then
@@ -697,32 +774,53 @@ function Tome:GetPage(name: string) : Types.Tome?
 end
 
 --[[
+
+	@within Tome
+	@param newTome Tome?
+	@return Tome
 	
-	Tome:Parent(newTome: Tome) : Tome
-	
-	Parents the current Tome to a new Tome. Takes in an argument, newTome, either
-	a Tome type, or nil. If the newTome type is a Tome, then the current Tome will
-	dissociate from its parent (provided it has one) and will reference itself
-	within the new Tome. Elsewise, if nil is provided, it will dissociate itself
-	from its parent (again, provided it has one) and it won't be referenced in
-	any other Tome (unless by other means)
+	Parents the Tome to another Tome is provided.
+	If no Tome for the new parent is provided, then the Tome will
+	disassociate itself from its original parent (if any)
+
+	Regardless of outcome, the Tome will return itself.
 	
 	Will throw an error if either Tome is in the middle of destroying.
 	
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+
+	local scopeTome = Tome.new()
+	local someOtherTome = Tome.new()
+
+	-- initially create a Page within scopeTome
+	local somePage = scopeTome:AddPage("Demonstration")
+
+	print(scopeTome:GetPage("Demonstration")) -> Page(somePage)
+	print(someOtherTome:GetPage("Demonstration")) -> nil
+
+	-- at some point you may want to move the Page to another Tome or Page:
+	somePage:Parent(someOtherTome)
+
+	print(scopeTome:GetPage("Demonstration")) -> nil
+	print(someOtherTome:GetPage("Demonstration")) -> Page(somePage)
+	```
+
 ]]
-function Tome:Parent(newTome: Types.Tome?) : Types.Tome
-	local isTome: boolean = RealTypeOf(newTome) == "Tome"
-		assert(isTome or newTome == nil, "Tome:Parent newTome argument must be a Tome type, or nil.")
+function Tome:Parent(newTome: Tome?) : Tome
+	local isTome: boolean = realTypeOf(newTome) == "Tome"
+	assert(isTome or newTome == nil, "Tome:Parent newTome argument must be a Tome type, or nil.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "parent a Tome"))
 	end
 	
 	if newTome and newTome:IsDestroying() then
-		ThrowError("Cannot add the current Tome to the newTome because the new Tome is in the middle of being destroyed.", "Ensure the new Tome is not destroying with Tome:IsDestroying.")
+		throwError("Cannot add the current Tome to the newTome because the new Tome is in the middle of being destroyed.", "Ensure the new Tome is not destroying with Tome:IsDestroying.")
 	end
 	
-	local parentTome: Types.Tome? = self.__parentTome
+	local parentTome: Tome? = self.__parentTome
 	if parentTome then
 		self.__parentTome = nil
 		
@@ -740,26 +838,47 @@ end
 
 --[[
 	
-	Tome:GivePage(page: Tome, newTome: Tome) : Tome
+	@within Tome
+	@param pageName string
+	@param newTome Tome
+	@return Tome
 	
-	Very similar to Tome:Parent, with the only difference being that
-	the Tome to parent is passed in as an argument (typically, a Page)
-	This is useful when needing to parent the Page of a Tome.
+	Will attempt to find a Page with the provided page name. If a Page is found
+	then the Page will parent itself to the new provided parent.
+
+	If a Page doesn't exist, nothing will happen.
 	
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+
+	local scopeTome = Tome.new()
+	local someOtherTome = Tome.new()
+
+	local somePage = scopeTome:AddPage("Demonstration")
+
+	scopeTome:GivePage("Demonstration", someOtherTome)
+	```
+
 ]]
-function Tome:GivePage(page: Types.Tome, newTome: Types.Tome) : Types.Tome
-	local isPage: boolean = RealTypeOf(page) == "Tome"
-		assert(isPage, "page argument must be a Tome type.")
+function Tome:GivePage(pageName: string, newTome: Tome) : ()
+	assert(type(pageName) == "string", "Expected argument #1 to be a string type.")
+	assert(realTypeOf(newTome) == "Tome", "Expected argument #2 to be a Tome type.")
 	
-	local isTome: boolean = RealTypeOf(newTome) == "Tome"
-		assert(isTome, "newTome argument must be a Tome type.")
+	local page: Tome? = self:GetPage(pageName)
+	if not page then
+		return
+	end
 	
-	return page:Parent(newTome)
+	page:Parent(newTome)
 end
 
 --[[
 	
-	Tome:Move(object: Tome, otherTome: Tome) : object
+	@within Tome
+	@param object<any>
+	@param otherTome Tome
+	@return object<any>
 	
 	New: The type of the parsed object will remain, meaning type annotations
 	will now be present even after internal addition
@@ -769,43 +888,52 @@ end
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	local someOtherTome = Tome.new()
 	
 	local apple = workspace.Apple
-	someTome:Add(apple)
+	scopeTome:Add(apple)
 	
-	print(someTome:Find(apple)) -- true
+	print(scopeTome:Contains(apple)) -- true
 	
-	-- Move the apple to the other Tome
-	someTome:Move(apple, someOtherTome)
+	-- move the apple to the other Tome
+	scopeTome:Move(apple, someOtherTome)
 	
-	print(someTome:Find(apple)) -- false
-	print(someOtherTome:Find(apple)) -- true
+	print(scopeTome:Contains(apple)) -- false
+	print(someOtherTome:Contains(apple)) -- true
 	```
 	
 ]]
-function Tome:Move<object>(object: object, otherTome: Types.Tome) : object
-	local parentIsTome: boolean = RealTypeOf(otherTome) == "Tome"
+function Tome:Move<object>(object: object, otherTome: Tome) : object
+	local parentIsTome: boolean = realTypeOf(otherTome) == "Tome"
 	if not parentIsTome then
-		ThrowError("Tome:Move otherTome argument must be a Tome.", "Ensure the provided 'otherTome' argument is a Tome.")
+		throwError("Tome:Move otherTome argument must be a Tome.", "Ensure the provided 'otherTome' argument is a Tome.")
 	end
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "move object to another Tome"))
 	end
 	
+	local destroyMethod: DestroyMethod? = self.__objects[object]
+	if not destroyMethod then
+		return object
+	end
+	
 	self:Remove(object)
-	otherTome:Add(object)
+	otherTome:Add(object, destroyMethod)
 	
 	return object
 end
 
 --[[
 	
-	Tome:Add(object: any, destroyMethod: Types.DestroyMethod?) : object
+	@within Tome
+	@param object<any>
+	@param destroyMethod DestroyMethod
+	@return object<any>
 	
 	New: The type of the parsed object will remain, meaning type annotations
 	will now be present even after internal addition
@@ -831,43 +959,42 @@ end
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	local cube = someTome:Add(workspace.Cube)
+	local cube = scopeTome:Add(workspace.Cube)
 	
 	-- will destroy the cube
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	-- Giving in a custom destroy method, in this case "Destroy"
 	-- which will be called on the cube as a function
-	local cube = someTome:Add(workspace.Cube, "Destroy")
+	local cube = scopeTome:Add(workspace.Cube, "Destroy")
 	
 	-- will destroy the cube
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	-- Giving in another custom method, in this case a function.
 	-- This function will be called when the Tome is destroyed,
-	-- giving in the object as the first argument. Typically the function
-	-- will dipose of the object itself, this is useful for Promises which
-	-- aren't currently supported.
-	local cube = someTome:Add(workspace.Cube, function(cube: BasePart)
+	-- giving in the object as the first argument to allow you to destroy the object however you like
+	local cube = scopeTome:Add(workspace.Cube, function(cube: BasePart)
 		cube:Destroy()
 	end)
 	
 	-- will destroy the cube
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
@@ -876,26 +1003,24 @@ function Tome:Add<object>(object: object, destroyMethod: Types.DestroyMethod?) :
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add an object"))
 	end
 	
-	-- should be a significant write speed increase when using Fast
-	-- still considering alternative faster options such as unsafe writing:
-	if not self.__fast then
-		local objectType: string = RealTypeOf(object)
+	if not self.__fastAdd then
+		local objectType: string = realTypeOf(object)
 		local objectIsTome: boolean = objectType == "Tome"
 		if objectIsTome then
 			if object == self then
-				ThrowError("Attempted to add current Tome to the current Tome. Upon calling :Destroy, infinite recursion will occur", "Ensure that the Tome isn't added to itself.")
+				throwError("Attempted to add current Tome to the current Tome. Upon calling :Destroy, infinite recursion will occur", "Ensure that the Tome isn't added to itself.")
 			end
 			
-			local lastParent: Types.Tome? = self:__getLastParentTome()
+			local lastParent: Tome? = self:__getLastParentTome()
 			if lastParent == object then
-				ThrowError("[Recursive]: Attempted to add a Tome which is an ancestor Tome of the current Tome.", "Ensure no ancestor Tomes are added to the Tome.")
+				throwError("[Recursive]: Attempted to add a Tome which is an ancestor Tome of the current Tome.", "Ensure no ancestor Tomes are added to the Tome.")
 			end
 		end
 		
 		-- not reusing 'objectType' for strict type compliancy
-		if typeof(object) == "Instance" and not object:IsA("Tween") then
+		if typeof(object) == "Instance" and not object:IsA("Tween") and self.__tagging then
 			if not object:IsDescendantOf(game) then
-				ThrowError([[
+				throwError([[
 					Attempted to add an already destroyed object to the Tome. If you are adding an Instance that hasn't been parented yet
 					This error will persist. Consider turning off Tagging via Tome.new({ Tagging = false }) or setting it to false globally:
 					Tome.luau -> Static.luau -> Tagging = false,
@@ -914,14 +1039,65 @@ function Tome:Add<object>(object: object, destroyMethod: Types.DestroyMethod?) :
 		end
 	end
 	
-	self.__objects[object] = destroyMethod or GetDestroyMethodForObject(object)
+	self.__objects[object] = destroyMethod or getDestroyMethodForObject(object)
 	
 	return object
 end
 
 --[[
-	@partial-public method
-	Tome:FastAdd<object>(object: object, destroyMethod: Types.DestroyMethod) : object
+	
+	@within Tome
+	@param object any
+	@param middleware (object: any, complete: () -> ()) -> ()
+	@param destroyMethod DestroyMethod?
+	@return object any
+	
+	*Adds* the object to the Tome in a way that allows a middleware function to run before the object is destroyed
+	Once a middleware has been added, there is no way to remove it. The only time the middleware is removed is during
+	the Tome's destroying life cycle.
+	
+	Yielding is allowed but not recommended as it will delay other objects from being destroyed.
+	
+	Will throw an error if the Tome is in the middle of being destroyed.
+	
+	Example(s):
+	```luau
+	local newTome = Tome.new()
+	
+	-- the code below will add the part to the Tome, but before the part is destroyed
+	-- the part will scale up and then wait 3 seconds before calling the main destroy
+	newTome:AddWithMiddleware(workspace.Part, function(object: Part, complete: () -> ())
+		object.Size = Vector3.one * 4
+		
+		task.delay(3, complete)
+	end)
+	```
+	
+]]
+function Tome:AddWithMiddleware<object>(object: object, middleware: (object: object, complete: () -> ()) -> (), destroyMethod: Types.DestroyMethod?) : object
+	if self:IsDestroying() then
+		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add with middleware to the Tome"))
+	end
+	
+	self:FastAdd(function()
+		middleware(object, function()
+			destroyMethod = destroyMethod or getDestroyMethodForObject(object)
+			
+			if destroyMethod then
+				destroyObject(object, destroyMethod)
+			end
+		end)
+	end, FunctionType)
+	
+	return object
+end
+
+--[[
+	
+	@within Tome
+	@param object<any>
+	@param destroyMethod DestroyMethod
+	@return object<any>
 	
 	Adds an object into the Tome while bypassing all sanity checks.
 	This includes checking whether the Tome is being destroyed, and all meta props
@@ -931,14 +1107,16 @@ end
 	
 ]]
 function Tome:FastAdd<object>(object: object, destroyMethod: Types.DestroyMethod?) : object
-	self.__objects[object] = destroyMethod or GetDestroyMethodForObject(object)
+	self.__objects[object] = destroyMethod or getDestroyMethodForObject(object)
 	
 	return object
 end
 
 --[[
 	
-	Tome:AddTuple(...: any) : ...any
+	@within Tome
+	@param object<...>
+	@return object<...>
 	
 	New: The type of the parsed objects will remain, meaning type annotations
 	will now be present even after internal addition
@@ -948,15 +1126,16 @@ end
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	-- adds the apple, banana and pear to the Tome
-	local apple, banana, pear = someTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
+	local apple, banana, pear = scopeTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
 	
 	-- will destroy the apple, banana and pear
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
@@ -974,29 +1153,26 @@ end
 
 --[[
 	
-	Tome:AddFromArray(objectsArray: {[number]: any}) : objectsArray
-	
-	New:
-		- The type of the parsed array will remain, meaning type annotations
-		will now be present even after internal addition.
-		
-		- Uses generalized iteration over ipairs.
+	@within Tome
+	@param objectsArray<{any}>
+	@return objectsArray<{any}>
 	
 	Iterates over the provided objects and adds them to the Tome.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	local objectsToAdd = {workspace.Apple, workspace.Banana, workspace.Pear}
 	
 	-- adds the apple, banana and pear to the Tome
-	local returnedObjects = someTome:AddFromArray(fruits)
+	local returnedObjects = scopeTome:AddFromArray(fruits)
 	
 	-- will destroy the apple, banana and pear
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
@@ -1018,7 +1194,9 @@ end
 
 --[[
 	
-	Tome:AddPromise(promise: any) : any
+	@within Tome
+	@param promise Promise
+	@return Promise
 	
 	Adds a standard Promise to the Tome.
 	
@@ -1026,7 +1204,7 @@ end
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
 ]]
-function Tome:AddPromise(promise: Types.Promise) : any -- any should be considered a Promise, for better auto complete make sure to type cast (promise :: Promise)
+function Tome:AddPromise(promise: Types.Promise) : Types.Promise -- any should be considered a Promise, for better auto complete make sure to type cast (promise :: Promise)
 	assert(promise
 		and type(promise) == "table"
 		and type(promise.getStatus) == "function"
@@ -1041,23 +1219,25 @@ function Tome:AddPromise(promise: Types.Promise) : any -- any should be consider
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add Promise"))
 	end
 	
-	local castedPromise: Types.Promise = promise
+	local typedPromise: Types.Promise = promise
 	
-	local status: string = string.lower(castedPromise:getStatus())
+	local status: string = string.lower(typedPromise:getStatus())
 	if status == "started" then
-		castedPromise:finally(function()
-			self.__objects[castedPromise] = nil
+		typedPromise:finally(function()
+			self.__objects[typedPromise] = nil
 		end)
 		
-		return self:Add(castedPromise, "cancel")
+		return self:Add(typedPromise, "cancel")
 	end
 	
-	return ThrowError("The provided Promise has already finished executing.", "Ensure the provided Promise is still active.")
+	return throwError("The provided Promise has already finished executing.", "Ensure the provided Promise is still active.")
 end
 
 --[[
 	
-	Tome:Remove(object: any) : object
+	@within Tome
+	@param object<any>
+	@return object<any>
 	
 	New: The type of the parsed object will remain, meaning type annotations
 	will now be present even after internal addition.
@@ -1068,17 +1248,18 @@ end
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	local cube = someTome:Add(workspace.Cube)
+	local cube = scopeTome:Add(workspace.Cube)
 	
 	-- remove the cube from the Tome
-	someTome:Remove(cube)
+	scopeTome:Remove(cube)
 	
 	-- will not destroy the cube as it was removed before the Tome was destroyed.
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
@@ -1101,7 +1282,9 @@ end
 
 --[[
 	
-	Tome:__remove(object: any) : ()
+	@within Tome
+	@param object<any>
+	@return object<any>
 	
 	Removes an object from the Tome. Bypassing any checks. Generally this is only
 	used internally and shouldn't be used outside this scope.
@@ -1115,7 +1298,9 @@ end
 
 --[[
 	
-	Tome:RemoveTuple(...: any) : ...any
+	@within Tome
+	@param ... object<any>
+	@return ... object<any>
 	
 	New: The type of the parsed objects will remain, meaning type annotations
 	will now be present even after internal addition.
@@ -1125,17 +1310,18 @@ end
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	local apple, banana, pear = someTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
+	local apple, banana, pear = scopeTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
 	
 	-- don't include the pear
-	someTome:RemoveTuple(apple, banana)
+	scopeTome:RemoveTuple(apple, banana)
 	
 	-- will only destroy the pear, as the apple and the banana were removed from the Tome
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
@@ -1153,7 +1339,9 @@ end
 
 --[[
 	
-	Tome:RemoveFromArray(objectsArray: {[number]: any}) : objectsArray
+	@within Tome
+	@param objectsArray<{any}>
+	@return objectsArray<{any}>
 	
 	New: The type of the parsed array will remain, meaning type annotations
 	will now be present even after internal addition.
@@ -1163,20 +1351,21 @@ end
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	local objects = {workspace.Apple, workspace.Banana, workspace.Pear}
 	
 	-- adds the apple, banana and pear
-	someTome:AddFromArray(objects)
+	scopeTome:AddFromArray(objects)
 	
 	-- removes the apple, banana and pear
-	someTome:RemoveFromArray(objects)
+	scopeTome:RemoveFromArray(objects)
 	
 	-- destroys the Tome, and no objects get destroyed
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
@@ -1196,25 +1385,28 @@ end
 
 --[[
 	
-	Tome:RemoveObjectsWithTag(tag: string) : ()
+	@within Tome
+	@param tag string
+	@return void
 	
 	Removes objects from the Tome that contain a specified tag.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	-- add a tag to the cube
 	local cube = workspace.Cube
 	cube:AddTag("SomeTag")
 	
 	-- add the cube to the Tome
-	someTome:Add(cube)
+	scopeTome:Add(cube)
 	
 	-- will remove the cube as it contains the "SomeTag" tag
-	someTome:RemoveObjectsWithTag("SomeTag")
+	scopeTome:RemoveObjectsWithTag("SomeTag")
 	```
 	
 ]]
@@ -1232,53 +1424,62 @@ end
 
 --[[
 	
-	Tome:RemoveObjectsOfClass(className: string) : ()
+	@within Tome
+	@param typeName string
+	@return void
 	
-	Removes objects from the Tome that have the specified class name.
+	Removes any objects that match the provided type.
+	If a table contains a __type key and the value of that key is equal to the type name
+	the object will be seen as removable.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	local cube = workspace.Cube -- "Part"
 	local someModel = workspace.SomeModel -- "Model"
 	
 	-- add the objects to the Tome
-	someTome:AddTuple(cube, someModel)
+	scopeTome:AddTuple(cube, someModel)
 	
 	-- remove the objects that are a "Model"
-	someTome:RemoveObjectsOfClass("Model")
+	scopeTome:RemoveObjectsOfType("Model")
 	
 	-- destroys only the cube as the "someModel" object was removed prior because it was a model
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
-function Tome:RemoveObjectsOfClass(className: string) : ()
-	assert(type(className) == "string", "Tome:RemoveObjectsOfClass className argument must be a string type.")
+function Tome:RemoveObjectsOfType(typeName: string) : ()
+	assert(type(typeName) == "string", "Expected argument #1 to be a string.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "remove objects of class"))
 	end
 	
-	local objectsOfClass: {any} = self:GetObjectsOfClass(className)
+	local objectsOfType: {any} = self:GetObjectsOfType(typeName)
 	
-	self:RemoveFromArray(objectsOfClass)
+	self:RemoveFromArray(objectsOfType)
 end
 
 --[[
 	
-	Tome:Connect(signal: RBXScriptSignal, listener: () -> ()) : RBXScriptConnection
+	@within Tome
+	@param signal RBXScriptSignal | {Connect: () -> ()}
+	@param listener (...any) -> ...any
+	@return RBXScriptConnection | {Disconnect: () -> ()}
 	
 	Connects a listener function to a RBXScriptSignal or custom Signal.
 	
-	Will thrown an error if the Tome is in the middle of being destroyed.
+	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	local Players = game:GetService("Players")
 	
@@ -1287,54 +1488,51 @@ end
 	end
 	
 	-- connects the playerAdded function to the Players.PlayerAdded signal
-	someTome:Connect(Players.PlayerAdded, playerAdded)
+	scopeTome:Connect(Players.PlayerAdded, playerAdded)
 	
 	task.wait(5)
 	
 	-- and then destroy the Tome which removes the connection
 	-- which doesn't welcome any more players :(
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
-function Tome:Connect(signal: any, listener: (...any) -> (...any)) : any
+function Tome:Connect(signal: any, listener: (...any) -> ...any) : any
 	if self:IsDestroying() then
-		ThrowError(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "connect to a signal"))
+		throwError(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "connect to a signal"))
 	end
 	
-	-- Added 24/12/2024 to fix regular Signals being attached
 	local realType: string = typeof(signal)
 	if realType == "RBXScriptSignal" then
 		return self:Add(signal:Connect(listener))
 	end
 	
-	--[[local connectFunction = signal.Connect or signal.connect
-	if not connectFunction then
-		ThrowError("Tome:Connect signal argument must be a RBXScriptSignal or custom Signal.")
-	end]]
-	
-	-- Added 22/12/2024 to fix external Signals not being connectable
 	return self:Add(signal:Connect(listener))
 end
 
 --[[
 	
-	Tome:Once(signal: RBXScriptSignal, listener: () -> ()) : RBXScriptConnection
+	@within Tome
+	@param signal RBXScriptSignal | {Connect: () -> ()}
+	@param listener (...any) -> ...any
+	@return RBXScriptConnection | {Disconnect: () -> ()}
 	
 	Connects a listener function once to a RBXScriptSignal or custom Signal.
 	Once invoked, the connection will be automatically disconnected, but will
 	remaing within the Tome until Tome:Destroy is called.
 	
-	Will thrown an error if the Tome is in the middle of being destroyed.
+	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
 	local newTome = Tome.new()
 	
 	local Players = game:GetService("Players")
 	
-	local function playerAdded(player: Player)
-		print(string.format("The first player to join was: %*", player))
+	local function playerAdded(player: Player) : ()
+		print(string.format("The first player to join was: %*", player.Name))
 	end
 	
 	-- connects the playerAdded function to the Players.PlayerAdded signal
@@ -1345,19 +1543,18 @@ end
 ]]
 function Tome:Once(signal: RBXScriptSignal, listener: (...any) -> (...any)) : any
 	if self:IsDestroying() then
-		ThrowError(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "connect once to a signal"))
+		throwError(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "connect once to a signal"))
 	end
-	
-	--[[if not signal.Once then
-		ThrowError("Tome:Once signal argument must be a RBXScriptSignal or custom Signal.")
-	end]]
 	
 	return self:Add(signal:Once(listener))
 end
 
 --[[
 	
-	Tome:Construct(class: {new: () -> ()} | () -> ()) : any
+	@within Tome
+	@param class {new: () -> ()} | () -> ()
+	@param ... any
+	@return any
 	
 	Constructs the provided class as if calling Class.new. Accepts both the class and
 	class function. After the class argument, tuple arguments can be provided which
@@ -1367,29 +1564,30 @@ end
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local SomeClass = require(`Path`)
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local SomeClass = require("../Path/To/Tome")
 	
-	local someTome = Tome.new()
+	local scopeTome = Tome.new()
 	
-	local class = someTome:Construct(SomeClass, "Apple", "Banana", "Pear")
+	local class = scopeTome:Construct(SomeClass, "Apple", "Banana", "Pear")
 	
 	-- will destroy the class object
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
-	```lua
-	local Tome = require(`Path`)
-	local SomeClass = require(`Path`)
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local SomeClass = require("../Path/To/Tome")
 	
-	local someTome = Tome.new()
+	local scopeTome = Tome.new()
 	
 	-- using the class constructor function as the first argument
-	local class = someTome:Construct(SomeClass.new, "Apple", "Banana", "Pear")
+	local class = scopeTome:Construct(SomeClass.new, "Apple", "Banana", "Pear")
 	
 	-- will destroy the class object
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
@@ -1412,50 +1610,52 @@ function Tome:Construct(class: any, ...: any) : any
 		return self:Add(class(...))
 	end
 	
-	ThrowError([[Attempted to construct a new class with Tome:Construct,
+	throwError([[Attempted to construct a new class with Tome:Construct,
 		however the class provided was not a class containing a .new function.
-		Only a function or a table containing a .new function is allowed in Tome:Construct.]])
+		Only a function or a table containing a .new function is allowed]])
 	
 	return
 end
 
 --[[
 	
-	Tome:Duplicate() : Tome
+	@within Tome
+	@return Tome
 	
 	Duplicated the current Tome. The duplicate will include the same metadata and objects. To avoid
 	copying over the metadata and objects, Tome:Clone is a better alternative.
 	
-	```lua
-	local Tome = require(`Path`)
-	local SomeClass = require(`Path`)
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local SomeClass = require("../Path/To/Tome")
 	
-	local someTome = Tome.new()
+	local scopeTome = Tome.new()
 	
 	-- add the apple to the Tome
-	someTome:Add(workspace.Apple)
-	print(someTome:Has(workspace.Apple)) -> true
+	scopeTome:Add(workspace.Apple)
+	print(scopeTome:Has(workspace.Apple)) -> true
 	
 	-- duplicate the Tome
-	local duplicateTome = someTome:Duplicate()
+	local duplicateTome = scopeTome:Duplicate()
 	print(duplicateTome:Has(workspace.Apple)) -> true
 	
 	-- destroys the apple as it existed within the duplicate Tome
 	duplicateTome:Destroy()
 	
 	-- prints false because the apple was destroyed by the duplicate Tome
-	print(someTome:Has(workspace.Apple)) -> false
+	print(scopeTome:Has(workspace.Apple)) -> false
 	```
 	
 ]]
-function Tome:Duplicate() : Types.Tome
+function Tome:Duplicate() : Tome
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "duplicate the Tome"))
 	end
 	
-	local duplicateTome: Types.Tome = Tome.new({
-		Fast = self.__fast,
-		FastDestroy = self.__fastDestroy,
+	local duplicateTome: Tome = Tome.new({
+		FastAdd = self.__fastAdd,
+		SpawnDestroy = self.__spawnDestroy,
 		Warnings = self.__warnings,
 		Tagging = self.__tagging,
 		UseParentMetaprops = self.__useParentMetaprops,
@@ -1470,7 +1670,10 @@ end
 
 --[[
 	
-	Tome:Clone(object: any, extendFunctionName: string?) : any
+	@within Tome
+	@param object any
+	@param extendFunctionName string?
+	@return any
 	
 	Clones the provided object and adds it to the Tome. The provided object must be
 	and Instance or class containing a function with the name of one of the extension
@@ -1481,27 +1684,28 @@ end
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	local duplicateCube = someTome:Clone(workspace.Cube)
+	local duplicateCube = scopeTome:Clone(workspace.Cube)
 	
 	-- will destroy the duplicate cube
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
-	```lua
-	local Tome = require(`Path`)
-	local SomeClass = require(`Path`)
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local SomeClass = require("../Path/To/Tome")
 	
-	local someTome = Tome.new()
+	local scopeTome = Tome.new()
 	
-	local class = someTome:Construct(SomeClass.new)
-	local duplicateClass = someTome:Clone(class)
+	local class = scopeTome:Construct(SomeClass.new)
+	local duplicateClass = scopeTome:Clone(class)
 	
 	-- both the class and duplicate class will be destroyed
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
@@ -1509,7 +1713,7 @@ function Tome:Clone(object: any, extendFunctionName: string?) : any
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "clone an object"))
 	end
-
+	
 	local objectType: string = typeof(object)
 	if objectType == "table" then
 		local extensionFunction: ((object: any) -> ())? = extendFunctionName and object[extendFunctionName]
@@ -1524,46 +1728,51 @@ function Tome:Clone(object: any, extendFunctionName: string?) : any
 			end
 		end
 		
-		return ThrowError("Attempted to clone a table (most likely a class) however the table doesn't contain an extension/clone method.", "Ensure the provided class has en extension method. If it does, add it to the extension list at the top of the module.")
+		return throwError("Attempted to clone a table (most likely a class) however the table doesn't contain an extension/clone method.", "Ensure the provided class has en extension method. If it does, add it to the extension list at the top of the module.")
 	elseif objectType == "Instance" then
 		return self:Add(object:Clone())
 	end
-
+	
 	error(string.format("Failed to clone object: %s", tostring(object)))
 end
 
 --[[
 	
-	Tome:Instance(instanceName: string, properties: {[string]: any}?) : Instance
+	@within Tome
+	@param instanceName string
+	@param properties {[string]: any}?
+	@return Instance
 	
-	Attempts to create an Instance from a provided class name. Behind the scenes Instance.new
-	is called within a pcall to safely evaluate the result. If an Instance was created successfully
-	the newly created Instance will be added to the Tome. Elesewise an error will be thrown.
-	
-	An optional properties table can be provided which will set the properties of the Instance.
-	If one of the properties fail to be applied to the Instance, a warning will be thrown. It should
-	be ensured that the properties table that's provided doesn't contain any properties that don't
-	exist within the Instance.
+	Creates an Instance from the provider instanceName argument. Note that that instantiation
+	is not invoked within protected mode. This means instantiation instances that do not exist e.g. Apple
+	will throw an error and stop the entire thread.
+
+	An optional properties argument can be passed to provide the instance with properties on a
+	string -> value basis. Note trying to set a property of the instance that doesn't exist will
+	result in a warning being thrown. To disable this ensure the Warnings metaprop of the Tome is false
+	It's recommended to allow warnings as they can show where memory might remain within the stack
+	Only disable it for secure production environments where logs are useless.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	local part = someTome:Instance("Part")
+	local part = scopeTome:Instance("Part")
 	part.Parent = workspace
 	
 	task.wait(2)
 	
-	someTome:Destroy() -- Destroys the part
+	scopeTome:Destroy() -- Destroys the part
 	```
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	local part = someTome:Instance("Part", {
+	local part = scopeTome:Instance("Part", {
 		Color = Color3.new(1, 1, 1),
 		Size = Vector3.one,
 		Parent = workspace,
@@ -1572,19 +1781,19 @@ end
 	task.wait(2)
 	
 	-- destroys the part
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	-- will throw an error as "Apple" isn't an actual instance
-	someTome:Instance("Apple")
+	-- will throw an error as "Apple" isn't an actual instance type
+	scopeTome:Instance("Apple")
 	```
 	
 ]]
-function Tome:Instance(instanceName: string, properties: {[string]: any}?) : Instance?
+function Tome:Instance(instanceName: string, properties: {[string]: any}?) : Instance
 	assert(type(instanceName) == "string", "The instanceName argument must be a string type.")
 	assert(type(properties) == "table" or properties == nil, "The properties argument must be a table type or nil.")
 	
@@ -1592,26 +1801,17 @@ function Tome:Instance(instanceName: string, properties: {[string]: any}?) : Ins
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "create an Instance"))
 	end
 	
-	local success: boolean, result: Instance = pcall(Instance.new, instanceName)
+	local result: Instance = Instance.new(instanceName)
 	
-	assert(success, string.format([[
-		Attempted to construct a new Instance with the name %s, however that Instance class doesn't exist.
-		Additional error message: %s
-	]], tostring(instanceName), tostring(result)))
-	
-	if properties then
-		local warnings: boolean = self.__warnings
-		
+	if properties and self.__warnings then
 		for property: string, value: any in properties do
 			xpcall(function()
 				(result :: any)[property] = value
 			end, function(...)
-				if not success and warnings then
-					warn(string.format([[
-						Attempted to apply property: %s to the created Instance.
+				warn(string.format([[
+					Attempted to apply property: %s to the created Instance.
 					]], tostring(property)))
-					warn("Extra details: ", ...)
-				end
+				warn("Extra details: ", ...)
 			end)
 		end
 	end
@@ -1621,9 +1821,15 @@ end
 
 --[[
 	
-	Tome:FromExisting(instance: Instance) : Instance
+	@within Tome
+	@param instance Instance
+	@return Instance
 	
-	Creates an Instance with Instance.fromExisting given an Instance.
+	Clones the provided instance using Instance.fromExisting:
+	https://create.roblox.com/docs/reference/engine/datatypes/Instance#fromExisting
+
+	The instance will copy all properties, attributes and tags.
+	Descendants will not copy over.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
@@ -1640,47 +1846,57 @@ end
 
 --[[
 	
-	Tome:Attach(object: any) : RBXScriptSignal?
+	@within Tome
+	@param object any
+	@return () -> ()
 	
 	Attaches an object to the Tome. If the object is an Instance, the Destroying Signal of
 	the Instance will be listened for, and once it's fired, the Tome will destroy itself.
-	If the object is a Tome, then a function will be added to that Tome. Once that Tome is
-	destroyed, the function will fire, destroying the current Tome. If the object is a
-	table that contains a :Connect method, then a listener function will connect to it and
+	
+	If the object is a Tome, then a wrapper destroy function will be appended to the Tome.
+	
+	If the object is a table that contains a :Connect method, then a listener function will connect to it and
 	upon the listener being fired, the Tome will destroy itself.
+	
+	A clean up function unrelated/ appended to the Tome is returned after attaching.
+	When the clean up function is called, the connections that consider whether an Instance is
+	still preset within the datamodel will be disconnected.
+	
+	Keep in mind that the clean up function is manually passed into the Tome, if this behaviour
+	is unpreferred then invoke Tome:RemoveObject with the clean up function as the only argument.
 	
 	Will throw an error if the object provided could not be attached to the Tome.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	local cube = workspace.Cube
 	
 	-- attach the Tome to the cube
-	someTome:Attach(cube)
+	scopeTome:Attach(cube)
 	
 	-- will also destroy the Tome, as the Tome attached to the cube
 	cube:Destroy()
 	```
 	
 ]]
-function Tome:Attach(object: any) : (RBXScriptConnection | () -> ())?
-	local objectType: string = RealTypeOf(object)
+function Tome:Attach(object: any) : (() -> ())?
+	local objectType: string = realTypeOf(object)
 	
 	if objectType == "Tome" then
-		return object:Add(function()
-			self:Destroy()
-		end)
+		return object:Add(self:WrapDestroy())
 	elseif objectType == "Instance" then
-		if not object:IsA("Tween") and not object:IsDescendantOf(game) then
-			ThrowError("Attempted to attach Tome to an Instance that doesn't exist.")
+		if not object:IsDescendantOf(game) then
+			return
 		end
 		
+		-- bad up values should be changed at some point
 		local wasDestroyed: boolean = false
 		local wasNulled: boolean = false
 		
-		local destroyingConnection: RBXScriptConnection = self:Connect(object.Destroying, function()
+		local destroyingConnection: RBXScriptConnection = object.Destroying:Connect(function()
 			if wasDestroyed or wasNulled then
 				return
 			end
@@ -1690,57 +1906,63 @@ function Tome:Attach(object: any) : (RBXScriptConnection | () -> ())?
 			self:Destroy()
 		end)
 		
-		local function ancestryChanged()
+		local ancestryConnection: RBXScriptConnection = object.AncestryChanged:Connect(function()
 			local descendantOfGame: boolean = object:IsDescendantOf(game)
-			
-			if not descendantOfGame then
-				if wasDestroyed or wasNulled then
-					return
-				end
-				
-				wasNulled = true
-				
-				self:Destroy()
+			if descendantOfGame then
+				return
 			end
-		end
-		
-		object.AncestryChanged:Connect(ancestryChanged)
-		
-		return destroyingConnection
-	elseif objectType == "Signal" or (objectType == "table" and type(object.Connect) == "function") or objectType == "RBXScriptSignal" then
-		return object:Connect(function()
+			
+			if wasDestroyed or wasNulled then
+				return
+			end
+			
+			wasNulled = true
+			
 			self:Destroy()
 		end)
+		
+		return self:FastAdd(function()
+			if destroyingConnection.Connected then
+				destroyingConnection:Disconnect()
+			end
+			
+			if ancestryConnection.Connected then
+				ancestryConnection:Disconnect()
+			end
+		end, FunctionType)
+	elseif objectType == "Signal" or (objectType == "table" and type(object.Connect) == "function") or objectType == "RBXScriptSignal" then
+		return object:Connect(self:WrapDestroy())
 	end
 	
-	ThrowError(string.format("Could not attach object: %* to Tome.", object), "Ensure the provided object is either a Tome, Signal, Instance or class with a :Connect method.")
-	
-	return
+	return throwError(string.format("Could not attach object: %* to Tome.", object), "Ensure the provided object is either a Tome, Signal, Instance or class with a :Connect method.")
 end
 
 --[[
 	
-	Tome:DestroyObjectsWithTag(tag: string) : ()
+	@within Tome
+	@param tag string
+	@return void
 	
-	Destroys all the objects contained within the Tome that have the specified tag.
+	Destroys all the objects contained within the Tome that have the provided tag.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	local apple, banana, pear = workspace.Apple, workspace.Banana, workspace.Pear
 	
 	-- add all the fruits
-	someTome:AddTuple(apple, banana, pear)
+	scopeTome:AddTuple(apple, banana, pear)
 	
 	-- tag only the apple and banana
 	apple:AddTag("SomeTag")
 	banana:AddTag("SomeTag")
 	
 	-- destroys only the apple and banana. The pear remains as it wasn't tagged
-	someTome:DestroyObjectsWithTag("SomeTag")
+	scopeTome:DestroyObjectsWithTag("SomeTag")
 	```
 	
 ]]
@@ -1752,151 +1974,115 @@ function Tome:DestroyObjectsWithTag(tag: string) : ()
 	end
 	
 	local collectedObjects: {Instance} = self:GetObjectsWithTag(tag)
-	local objectExists: boolean = TableUtility.isEmpty(collectedObjects)
-	if objectExists then
-		for _: number, object: Instance in collectedObjects do
-			self:DestroyObject(object)
-		end
+	for _: number, object: Instance in collectedObjects do
+		self:DestroyObject(object)
 	end
 end
 
 --[[
 	
-	Tome:DestroyObjectsOfClass(className: string) : ()
+	@within Tome
+	@param className string
+	@return void
 	
-	Destroys all the objects contained within the Tome that are of a specified class.
+	Destroys all the objects contained within the Tome that are of the provided class type.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	-- the apple is a model
-	someTome:Add(workspace.Apple)
+	scopeTome:Add(workspace.Apple)
 	
 	-- the cube is a part
-	someTome:Add(workspace.Cube)
+	scopeTome:Add(workspace.Cube)
 	
 	-- will object destroy the cube
-	someTome:DestroyObjectsOfClass("BasePart")
+	scopeTome:DestroyObjectsOfType("BasePart")
 	```
 	
 ]]
-function Tome:DestroyObjectsOfClass(className: string) : ()
-	assert(type(className) == "string", "Tome:DestroyObjectsOfClass className argument must be a string type.")
+function Tome:DestroyObjectsOfType(typeName: string) : ()
+	assert(type(typeName) == "string", "Expected argument #1 to be a string.")
 	
 	if self:IsDestroying() then
-		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, string.format("destroy objects of class: %s", className)))
+		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, string.format("destroy objects of class: %s", typeName)))
 	end
 	
-	local collectedObjects: {Instance} = self:GetObjectsOfClass(className)
-	local objectExists: boolean = TableUtility.isEmpty(collectedObjects)
-	if objectExists then
-		for _: number, object: Instance in collectedObjects do
-			self:DestroyObject(object)
-		end
+	local collectedObjects: {any} = self:GetObjectsOfType(typeName)
+	for _: number, object: any in collectedObjects do
+		self:DestroyObject(object)
 	end
 end
 
 --[[
 	
-	Tome:RenderStepped(listener: (deltaTime: number) -> ()) : RBXScriptConnection
+	@within Tome
+	@param signalName RunServiceSignalName
+	@param listener (deltaTime: number) -> () | (time: number, deltaTime: number) -> ()
+	@return RBXScriptConnection
+
+	Connects the provided listener to a RunService signal with the provided signal name.
+
+	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	Connects the RunService.RenderStepped Signal to a listener function and adds the connection
-	to the Tome.
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
+	scopeTome:HookRunServiceSignal("RenderStepped", function(deltaTime: number)
+		print(`[RenderStepped]: Time spent: {deltaTime}`)
+	end)
+
+	scopeTome:HookRunServiceSignal("Stepped", function(timeElapsed: number, deltaTime: number)
+		print(`[Stepped]: Time elapsed: {timeElapsed} Time spent: {deltaTime}`)
+	end)
+	```
+
+]]
+function Tome:HookRunServiceSignal(signalName: RunServiceSignalName, listener: (deltaTime: number) -> () | (time: number, deltaTime: number) -> ()) : RBXScriptConnection
+	assert(type(listener) == "function", "Bad argument #2 expected a function type but got something else")
+	
+	local signal: RBXScriptSignal = assert((RunService :: any)[signalName], "Expected a RunService signal but got nil")
+	
+	return self:Connect(signal, listener)
+end
+
+--[[
+	
+	@within Tome
+	@param name string
+	@param renderPriority number?
+	@param listener (deltaTime: number) -> ()
+	@return () -> ()
+
+	Binds to the RunService BindToRenderStep method.
+
+	Arguments are passed sequentially in the same way RunService:BindToRenderStep expects them:
+	https://create.roblox.com/docs/reference/engine/classes/RunService#BindToRenderStep
+
+	After hooking, a function is returned which can be called to unbind the render step binding.
+	The function is also passed into the Tome to allow the binding to clean up after destruction.
+
+	NOTE: You should not be calling RunService:UnbindRenderStepped as the function will remain
+	in memory until the Tome is destroyed.
+
 	Will throw an error if the method is not called from the client.
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	local connection = someTome:RenderStepped(function(deltaTime: number)
-		print(deltaTime)
+	local unbind: () -> () = scopeTome:BindRenderStepped("STEP", 1, function(deltaTime: number)
+		print(`Time spent stepping... {deltaTime}`)
 	end)
 	
-	task.wait(2)
-	
-	-- will disconnect the connection
-	someTome:Destroy()
-	```
-	
-]]
-function Tome:RenderStepped(listener: (deltaTime: number) -> ()) : RBXScriptConnection
-	assert(type(listener) == "function", "Tome:RenderStepped listener argument must be a function type.")
-	
-	if self:IsDestroying() then
-		ThrowError(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "connect to RunService.RenderStepped"))
-	end
-	
-	local isClient: boolean = RunService:IsClient()
-	if not isClient then
-		ThrowError([[
-			Tome:RenderStepped can only be called on the client.
-			Tome:Heartbeat is a good alternative that works for both the client, and server.
-		]])
-	end
-
-	return self:Connect(RunService.RenderStepped, listener)
-end
-
---[[
-	
-	Tome:Heartbeat(listener: (deltaTime: number) -> ()) : RBXScriptConnection
-	
-	Connects the RunService.Heartbeat Signal to a listener function and adds the connection
-	to the Tome.
-	
-	Will throw an error if the Tome is in the middle of being destroyed.
-	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
-	
-	local connection = someTome:Heartbeat(function(deltaTime: number)
-		print(deltaTime)
-	end)
-	
-	task.wait(2)
-	
-	-- will disconnect the connection
-	someTome:Destroy()
-	```
-	
-]]
-function Tome:Heartbeat(listener: (deltaTime: number) -> ()) : RBXScriptConnection
-	assert(type(listener) == "function", "Tome:Heartbeat listener argument must be a function type.")
-
-	if self:IsDestroying() then
-		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "connect to RunService.Heartbeat"))
-	end
-
-	return self:Connect(RunService.Heartbeat, listener)
-end
-
---[[
-	
-	Tome:BindRenderStepped(name: string, listener: (deltaTime: number) -> (), renderPriority: number?) : () -> ()
-	
-	Calls the RunService:BindToRenderStep method and returns a function that when called, unbinds the
-	binding to that render step. The argument order is the same, name, render priority and the listener.
-	The render priority must be an integer, or nil. If the render priority is nil, 1 will be used as
-	the fallback value.
-	
-	Will throw an error if the method is not called from the client.
-	Will throw an error if the Tome is in the middle of being destroyed.
-	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
-	
-	local unbind = someTome:BindRenderStepped("Test", 1, function()
-		print("hello!")
-	end)
-	
-	-- Unbinds the render stepped binding
+	-- unbinds the render stepped binding after 2 seconds
 	task.delay(2, unbind)
 	```
 	
@@ -1907,15 +2093,7 @@ function Tome:BindRenderStepped(name: string, renderPriority: number?, listener:
 	assert(type(listener) == "function", "Tome:BindRenderStepped listener argument must be a function type.")
 	
 	if self:IsDestroying() then
-		ThrowError(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "bind to render step"))
-	end
-	
-	local isClient: boolean = RunService:IsClient()
-	if not isClient then
-		ThrowError([[
-			Tome:BindRenderStepped can only be called on the client.
-			Tome:Heartbeat is a good alternative that works for both the client, and server.
-		]])
+		throwError(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "bind to render step"))
 	end
 	
 	if renderPriority then
@@ -1935,84 +2113,94 @@ end
 
 --[[
 	
-	Tome:UnbindRenderStepped(name: string) : ()
+	@within Tome
+	@param name string
+	@return void
 	
-	Calls the RunService:UnbindFromRenderStep method provided a name.
+	Invokes the RunService:UnbindFromRenderStep method given the provided name as the only argument:
+	https://create.roblox.com/docs/reference/engine/classes/RunService#UnbindFromRenderStep
 	
 	Will throw an error if the method is not called from the client.
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	someTome:BindRenderStepped("Test", 1, function(deltaTime: number)
-		print(deltaTime)
+	scopeTome:BindRenderStepped("Test", 1, function(deltaTime: number)
+		print(`Time spent: {deltaTime}`)
 	end)
 	
 	task.wait(2)
 	
-	someTome:UnbindRenderStepped("Test")
+	scopeTome:UnbindRenderStepped("Test")
 	```
 	
 ]]
 function Tome:UnbindRenderStepped(name: string) : ()
 	assert(type(name) == "string", "Tome:UnbindRenderStepped name argument must be a string type.")
 	
-	local isClient: boolean = RunService:IsClient()
-	if not isClient then
-		ThrowError("Tome:UnbindRenderStepped can only be called on the client.")
-	end
-	
 	RunService:UnbindFromRenderStep(name)
 end
 
 --[[
 	
-	Tome:Delay(duration: number, listener: (...any) -> (...any), ...: any) : thread
+	@within Tome
+	@param duration number
+	@param listener (...<vargs>) -> ... any
+	@param ... <vargs>
+	@return thread
 	
-	Functions the exact same as task.delay, with the added benefit of adding the thread to
-	the Tome immediately after it has been created. Tuple arguments can be passed after the
-	listener function - the arguments will be passed into the task.delay function.
+	Calls task.delay with the same argument types:
+	https://create.roblox.com/docs/reference/engine/libraries/task#delay
+
+	Will automatically add the thread to the Tome and dispose of it properly on destruction.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	someTime:Delay(3, function()
-		print("Pineapple!!!")
+		print("Destroyed the Tome")
 	end)
 	
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
-function Tome:Delay(duration: number, listener: (...any) -> (...any), ...: any) : thread
+function Tome:Delay<vargs>(duration: number, listener: (...vargs) -> ...any, ...: vargs) : thread
 	assert(type(duration) == "number", "Tome:Delay duration argument must be a number type,")
 	assert(type(listener) == "function", "Tome:Delay listener argument must be a function type.")
-
+	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "delay a thread"))
 	end
-
-	return self:Add(task.delay(duration, listener))
+	
+	return self:Add(task.delay(duration, listener, ...))
 end
 
 --[[
 	
-	Tome:Spawn(listener: (...any) -> (...any), ...: any) : thread
+	@within Tome
+	@param listener (...<vargs>) -> ... any
+	@param ... <vargs>
+	@return thread
 	
-	Functions the exact same as task.spawn, with the added benefit of adding the thread to
-	the Tome immediately after it has been created. Tuple arguments can be passed after the
-	listener function - the arguments will be passed into the task.spawn function.
+	Calls task.spawn with the same argument types:
+	https://create.roblox.com/docs/reference/engine/libraries/task#spawn
+
+	Will automatically add the thread to the Tome and dispose of it properly on destruction.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	someTime:Spawn(function()
 		while true do
@@ -2025,11 +2213,11 @@ end
 	task.wait(5)
 	
 	-- cancels the thread preventing the loop from continuing
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
-function Tome:Spawn(listener: (...any) -> (...any), ...: any) : thread
+function Tome:Spawn<vargs>(listener: (...vargs) -> ...any, ...: vargs) : thread
 	assert(type(listener) == "function", "Tome:Spawn listener argument must be a function type.")
 	
 	if self:IsDestroying() then
@@ -2041,89 +2229,124 @@ end
 
 --[[
 	
-	Tome:Defer(listener: (...any) -> (...any), ...: any) : thread
+	@within Tome
+	@param listener (...<vargs>) -> ... any
+	@param ... <vargs>
+	@return thread
 	
-	Functions the exact same as task.defer, with the added benefit of adding the thread to
-	the Tome immediately after it has been created. Tuple arguments can be passed after the
-	listener function - the arguments will be passed into the task.defer function.
+	Calls task.defer with the same argument types:
+	https://create.roblox.com/docs/reference/engine/libraries/task#defer
+
+	Will automatically add the thread to the Tome and dispose of it properly on destruction.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
 ]]
-function Tome:Defer(listener: (...any) -> (...any), ...: any) : thread
+function Tome:Defer<vargs>(listener: (...vargs) -> ...any, ...: vargs) : thread
 	assert(type(listener) == "function", "Tome:Defer listener argument must be a function type.")
-
+	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "defer a thread"))
 	end
-
+	
 	return self:Add(task.defer(listener, ...))
 end
 
 --[[
+
+	@within Tome
+	@param thread thread?
+	@return void
+
+	Yields the provided thread indefinitely until the Tome is destroyed.
+	If no thread is provided, then the current main thread will be used.
+
+	After the Tome has been destroyed, the evaluated thread will resume.
+
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	Tome:Find(object: any) : boolean
+	print("This prints instantly")
+
+	scopeTome:DelayDestroy(1)
+	scopeTome:Yield()
+
+	print("This prints after ~1 second")
+	```
+
+]]
+function Tome:Yield(thread: thread?) : ()
+	local currentThread: thread = thread or coroutine.running()
+	
+	self:FastAdd(currentThread, coroutine.resume)
+	
+	return coroutine.yield()
+end
+
+--[[
+	
+	@within Tome
+	@param object any
+	@return boolean
 	
 	Checks if an object exists within the Tome.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	-- check if the cube exists initially, which of course, it doesn't
-	local exists = someTome:Find(workspace.Cube)
-	print(exists) -- False
+	-- check if the cube exists initially, which it doesn't
+	local exists: boolean = scopeTome:Contains(workspace.Cube)
+	print(exists) -- false
 	
-	-- add the cube to the Tome
-	someTome:Add(workspace.Cube)
+	-- so we add the cube to the Tome
+	scopeTome:Add(workspace.Cube)
 	
-	-- now that the cube has been added, it returns true
-	local exists = someTome:Find(workspace.Cube)
-	print(exists) -- True
+	-- and now that the cube has been added, true is returned
+	local exists: boolean = scopeTome:Contains(workspace.Cube)
+	print(exists) -- true
 	```
 	
 ]]
-function Tome:Find(object: any) : boolean
-	return self.__objects[object] and true or false
+function Tome:Contains(object: any) : boolean
+	return self.__objects[object] ~= nil
 end
 
--- An alias for Tome:Find as the word find may be obscure in some contexts
-Tome.Has = Tome.Find
+-- an alias for Tome:Contains (backwards compatability)
+Tome.Has = Tome.Contains
 
 --[[
-	TODO: Instate some kind of type inference for the Signal dependency.
 	
-	Type inference won't work here because Signal may not exist
-	Current solution:
-		Set the return type to 'any' to silence the issue
-]]
---[[
-	
-	Tome:Signal() : Signal
+	@within Tome
+	@return Signal
 	
 	Constructs a standard Signal and returns it.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	local signal = someTome:Signal()
+	local signal = scopeTome:Signal()
 	
-	signal:Connect(function(something)
-		print(something)
+	signal:Connect(function(argument: string)
+		print(argument)
 	end)
 	
-	-- acts like a normal Signal
+	-- fires like any signal
 	signal:Fire("Hello, world!")
 	
-	-- destroys the Signal
-	someTome:Destroy()
+	-- destroy the signal manually (will remain in Tome memory until disposed)
+	scopeTome:Destroy()
 	```
 	
 ]]
-function Tome:Signal() : any
+function Tome:Signal() : Signal.Signal
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "construct a Signal"))
 	end
@@ -2133,35 +2356,29 @@ end
 
 --[[
 
-	Tome:Table(existing: {}?) : {}
+	@within Tome
+	@param existing {[any]: any}?
+	@return {[any]: any}
 	
 	Adds the given table to the Tome while using "table.clear" as the destroy method
-	This is useful for when you want to clear a table after the Tome is destroyed
+	This is useful for when you want to clear a table after the Tome is destroyed.
+
+	The use case for this is to clear instance references which will be permanently
+	in memory until cleared. Such as round systems that host instances internally.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	Bad practice:
-		```lua
-		local Tome = require(`Path`)
-		local someTome = Tome.new()
-		
-		local myTable = someTome:Add({}, Tome.ClearTable)
-		
-		print(myTable)
-		```
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	Good practice:
-		```lua
-		local Tome = require(`Path`)
-		local someTome = Tome.new()
-		
-		local myTable = someTome:Table({})
-		
-		print(myTable)
-		```
+	local myTable: {[any]: any} = scopeTome:Table({})
+	
+	print(myTable)
+	```
 	
 ]]
-function Tome:Table(existing: {}?) : {}
+function Tome:Table(existing: {[any]: any}?) : {[any]: any}
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add a table"))
 	end
@@ -2171,28 +2388,37 @@ end
 
 --[[
 	
-	Tome:Tween(instance: Instance, tweenInfo: TweenInfo, propertyTable: {[string]: any}, metadata: {}?) : Tween
+	@within Tome
+	@param instance Instance
+	@param tweenInfo TweenInfo
+	@param propertyTable {[string]: any}
+	@param metadata {Play: boolean?, RemoveOnComplete: boolean?}?
+	@return {[any]: any}
 	
-	Creates a Tween object with the provided arguments. Very similar to TweenService:Create, where the
-	first argument is the object to tween. The second argument is the tween info. And the third argument
-	is the property table.
-	
-	However Tweens can be complex at times, and disposing of them requires slightly more effort. This is
-	where metadata comes in. Metadata comes in table form and can contain three properties, "Play",
-	"RemoveOnComplete" and "RemoveOnDestroy".
-	
-	The property Play is a boolean that determines whether the Tween should immediately play after being
-	created.
-	
-	The property RemoveOnComplete is a boolean that determines whether the Tween should be removed from
-	the Tome after it has been completed once. In cases where the same Tween plays multiple times, this
-	property may be set to false to ensure proper clean up.
-	
-	The property RemoveOnDestroy is a boolean that determines whether the Tween should be removed after
-	the Tween has been destroyed.
+	Creates a Tween with the provided arguments. The arguments are sequentially the same as TweenService:Tween:
+	https://create.roblox.com/docs/reference/engine/classes/TweenService#Create
+
+	Unlike TweenService's Create method, this one takes in a final optional argument that determines what to
+	do with the Tween after it has been stored by the Tome.
+
+	PLay: Will play the tween immediately after creation
+	RemoveOnComplete: Will dispose of the tween from the Tome automatically after it has reached a Completed or Cancelled state
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
+	
+	local tween: Tween = scopeTome:Tween(workspce.Cube, TweenInfo.new(1), { Size = Vector3.one * 4 }, { Play = true })
+
+	local function completed() : ()
+		print("Finished tween")
+	end
+
+	tween.Completed:Once(completed)
+	```
+
 ]]
 function Tome:Tween(
 	instance: Instance,
@@ -2201,136 +2427,118 @@ function Tome:Tween(
 	metadata: {
 		Play: boolean?,
 		RemoveOnComplete: boolean?,
-		RemoveOnDestroy: boolean?,
 	}?
 ) : Tween
 	assert(typeof(instance) == "Instance", "Tome:Tween instance argument must be an Instance type.")
 	assert(typeof(tweenInfo) == "TweenInfo", "Tome:Tween tweenInfo argument must be a TweenInfo type.")
 	assert(typeof(propertyTable) == "table", "Tome:Tween propertyTable argument must be a table type.")
-	
-	local metadataType: string = type(metadata)
-		assert(metadataType == "table" or metadata == nil, "Tome:Tween metadata argument must be a table type, or nil.")
+	assert(type(metadata) == "table" or metadata == nil, "Tome:Tween metadata argument must be a table type, or nil.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "create a Tween"))
 	end
 	
-	if metadata then
-		metadata.Play = if type(metadata.Play) == "boolean" then metadata.Play else true
-		metadata.RemoveOnComplete = if type(metadata.RemoveOnComplete) == "boolean" then metadata.RemoveOnComplete else true
-		metadata.RemoveOnDestroy = if type(metadata.RemoveOnDestroy) == "boolean" then metadata.RemoveOnDestroy else true
-	end
-	
-	local realMetadata: Types.TweenMetadata = metadata or {
-		Play = true,
-		RemoveOnComplete = true,
-		RemoveOnDestroy = true,
-	}
-	
 	local tween: Tween = self:Add(TweenService:Create(instance, tweenInfo, propertyTable))
 	
-	if realMetadata.RemoveOnComplete then
-		local function tweenCompleted(playbackState: Enum.PlaybackState) : ()
-			local tweenEnded: boolean = playbackState == Enum.PlaybackState.Completed
-				or playbackState == Enum.PlaybackState.Cancelled
-			
-			-- once the tween has reached either completed states
-			-- it should be disposed from the Tome
-			if tweenEnded then
-				self.__objects[tween] = nil
+	if metadata then
+		if metadata.RemoveOnComplete then
+			local function tweenCompleted(playbackState: Enum.PlaybackState) : ()
+				local tweenEnded: boolean = playbackState == Enum.PlaybackState.Completed
+					or playbackState == Enum.PlaybackState.Cancelled
+				
+				if tweenEnded then
+					self.__objects[tween] = nil
+				end
 			end
+			
+			tween.Completed:Once(tweenCompleted)
 		end
-		
-		tween.Completed:Once(tweenCompleted)
-	end
-	
-	if realMetadata.RemoveOnDestroy then
-		-- for one reason or another, the tween mightve been destroyed
-		-- to ensure the tween doesnt stay in memory its best to listen for when its destroyed, and properly dispose of it
-		local function tweenDestroying() : ()
-			self.__objects[tween] = nil
+
+		if metadata.Play then
+			tween:Play()
 		end
-		
-		tween.Destroying:Once(tweenDestroying)
 	end
-	
-	if realMetadata.Play then
-		tween:Play()
-	end
-	
+
 	return tween
 end
 
 --[[
 	
-	Tome:DestroyObject(object: any) : ()
+	@within Tome
+	@param object any
+	@return boolean
 	
-	Destroys the provided object. The object must be within the Tome to be destroyed. Elsewise
-	nothing will happen.
+	Destroys the provided object. The object must be within the Tome to be destroyed.
+	If the object is not part of the Tome, then it will be ignored.
+
+	In either case, if the object was destroyed, true will be returned, elsewise false.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	local apple, banana = someTome:AddTuple(workspace.Apple, workspace.Banana)
+	local apple, banana = scopeTome:AddTuple(workspace.Apple, workspace.Banana)
 	
 	-- the apple will be destroyed
-	someTome:DestroyObject(apple)
+	scopeTome:DestroyObject(apple)
 	```
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	local banana = workspace.Banana
 	
-	-- nothing will happen as the banana was never added to the Tome
-	someTome:DestroyObject(banana)
+	-- nothing will happen bceause the banana isn't inside the Tome
+	scopeTome:DestroyObject(banana)
 	```
 	
 ]]
-function Tome:DestroyObject(object: any) : ()
+function Tome:DestroyObject(object: any) : boolean
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "destroy object"))
 	end
-
-	local objects: {[any]: any} = self.__objects
-	local destroyMethod: any = objects[object]
-	if destroyMethod then
-		local objectIsTome: boolean = RealTypeOf(object) == "Tome"
-		if objectIsTome then
-			return object:Destroy()
-		end
-		
-		objects[object] = nil
-		
-		if self.__fastDestroy then
-			pcall(task.spawn, DestroyObject, object, destroyMethod)
-		else
-			pcall(DestroyObject, object, destroyMethod)
-		end
+	
+	local objects: {[any]: DestroyMethod} = self.__objects
+	local destroyMethod: DestroyMethod? = objects[object]
+	if not destroyMethod then
+		return false
 	end
+	
+	objects[object] = nil
+	
+	if self.__spawnDestroy then
+		pcall(task.spawn, destroyObject, object, destroyMethod)
+	else
+		pcall(destroyObject, object, destroyMethod)
+	end
+	
+	return true
 end
 
 --[[
 	
-	Tome:DestroyObjects(...: any) : ()
+	@within Tome
+	@param ... any
+	@return void
 	
-	Functions exactly the same as Tome:DestroyObjects, with the only difference being that
-	tuple objects can be provided.
+	Functions exactly the same as Tome:DestroyObject, with the only difference being that
+	tuple objects can be provided instead of singular.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	local apple, banana, pear = someTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
+	local apple, banana, pear = scopeTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
 	
 	-- will only destroy the apple and banana
-	someTome:DestroyObjects(apple, banana)
+	scopeTome:DestroyObjects(apple, banana)
 	```
 	
 ]]
@@ -2346,29 +2554,30 @@ end
 
 --[[
 	
-	Tome:CanDestroy() : boolean
+	@within Tome
+	@return boolean
 	
 	Returns a boolean which determines whether the Tome can be destroyed. Generally, this method
 	doesn't need to be called before destroying the Tome, unless there's a deeper reason to do
 	so.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
-	
-	print(someTome:CanDestroy()) -- true
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	-- this function contains a yield that will pause the Tome for 2 seconds
-	someTome:Add(function()
+	scopeTome:Add(function()
 		task.wait(2)
 	end)
 	
 	-- delay the code below by 0.5 seconds to let the Tome begin a destroy sequence
 	task.delay(0.5, function()
-		print(someTome:CanDestroy()) -- false, as the Tome is currently in the middle of being destroyed
+		print(scopeTome:CanDestroy()) -- false, as the Tome is currently in the middle of being destroyed
 	end)
+
+	print(scopeTome:CanDestroy()) -- true
 	
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
@@ -2378,9 +2587,21 @@ end
 
 --[[
 	
-	Tome:IsDestroying() : boolean
+	@within Tome
+	@return boolean
 	
 	Returns whether or not the Tome is currently destroying.
+
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
+	
+	if scopeTome:IsDestroying() then
+		-- do nothing
+	else
+		scopeTome:Add(workspace.Cube)
+	end
+	```
 	
 ]]
 function Tome:IsDestroying() : boolean
@@ -2389,46 +2610,47 @@ end
 
 --[[
 	
-	Tome:GetObjects() : {[any]: any}
+	@within Tome
+	@return {[any]: DestroyMethod}
 	
 	Returns all the objects contained within the Tome. This should only be used to modify
 	the objects and not destroy them directly.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	someTome:AddTuple(workspace.Apple, workspace.Banana)
+	scopeTome:AddTuple(workspace.Apple, workspace.Banana)
 	
-	print(someTome:GetObjects()) -> {[Instance(Apple,REF)] = "Destroy", [Instance(Banana,REF)] = "Destroy"}
+	print(scopeTome:GetObjects()) -> {[Instance(Apple,REF)] = "Destroy", [Instance(Banana,REF)] = "Destroy"}
 	```
 	
 ]]
-function Tome:GetObjects() : {[any]: any}
+function Tome:GetObjects() : {[any]: DestroyMethod}
 	return self.__objects
 end
 
 --[[
 	
-	Tome:Count() : number
+	@within Tome
+	@return number
 	
 	Returns the total amount of objects currectly inside the Tome
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	someTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
+	scopeTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
 	
-	print(someTome:Count()) --> 3
-	
+	print(scopeTome:Count()) --> 3
 	```
 	
 ]]
 function Tome:Count() : number
 	local count: number = 0
 	
-	local objects: {[any]: string} = self.__objects
+	local objects: {[any]: DestroyMethod} = self.__objects
 	for object: any in objects do
 		count += 1
 	end
@@ -2438,61 +2660,53 @@ end
 
 --[[
 	
-	Tome:GetObjectsOfClass(className: string) : {[any]: any}
+	@within Tome
+	@param typeName string
+	@return {any}
+
+	Returns all the objects that match the provided type.
+
+	NOTE: If a table contains a __type key and the value of that key
+	is equal to the type provided. Then the table will be included in the array.
 	
-	Returns an array of objects contained within the Tome that are
-	of a certain class name. The method will iterate over all the
-	objects allocated to the Tome and see if the class name is a
-	match.
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	For every iteration, if an object is an Instance type and has
-	the same ClassName property as the className argument, it will
-	be added to the list of objects to return.
+	scopeTome:Add(workspace.Apple)
+	scopeTome:Connect(workspace.ChildAdded, print)
+	scopeTome:Add(function() end)
 	
-	If an object is a Tome or Signal, it will check if the className
-	is directly equal to the __type property of the Tome/Signal.
-	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
-	
-	someTome:Add(workspace.Apple)
-	someTome:Connect(workspace.ChildAdded, print)
-	someTome:Add(function()
-		print("Tome was destroyed!")
-	end)
-	
-	local objects = someTome:GetObjectsOfClass("function")
+	local objects = scopeTome:GetObjectsOfType("function")
 	print(objects) -> {[1] = function(REF)}
 	```
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	someTome:Add(workspace.Apple)
-	someTome:Connect(workspace.ChildAdded, print)
-	someTome:Tween(workspace.Cube, TweenInfo.new(5), { Size = Vector3.one })
-	someTome:Tween(workspace.AnotherCube, TweenInfo.new(5), { Size = Vector3.one })
+	scopeTome:Add(workspace.Apple)
+	scopeTome:Connect(workspace.ChildAdded, print)
+	scopeTome:Tween(workspace.Cube, TweenInfo.new(5), { Size = Vector3.one })
+	scopeTome:Tween(workspace.AnotherCube, TweenInfo.new(5), { Size = Vector3.one })
 	
-	local objects = someTome:GetObjectsOfClass("Tween")
+	local objects = scopeTome:GetObjectsOfType("Tween")
 	print(objects) -> {[1] = Instance(Tween,REF), [2] = Instance(Tween,REF)}
 	```
 	
 ]]
-function Tome:GetObjectsOfClass(className: string) : {any}
-	assert(type(className) == "string", "Tome:GetObjectsOfClass className argument must be a string type.")
+function Tome:GetObjectsOfType(typeName: string) : {any}
+	assert(type(typeName) == "string", "Tome:GetObjectsOfType className argument must be a string type.")
 	
-	local objects: {[any]: any} = self.__objects
-	local collectedObjects: {Instance} = {}
+	local objects: {[any]: DestroyMethod} = self.__objects
+	local collectedObjects: {any} = {}
 	
 	for object: any in objects do
-		local objectType: string = RealTypeOf(object)
+		local objectType: string = realTypeOf(object)
 		
-		if (typeof(object) == "Instance" and object:IsA(className))
-			or (objectType == className)
-			or (objectType == "Tome" and className == "Tome")
-			or (objectType == "Signal" and className == "Signal")
+		if objectType == "Instance" and object:IsA(typeName)
+			or objectType == "table" and object.__type == objectType
+			or objectType == typeName
 		then
 			table.insert(collectedObjects, object)
 		end
@@ -2503,22 +2717,36 @@ end
 
 --[[
 	
-	Tome:GetObjectsWithTag(tag: string) : {[number]: any}
+	@within Tome
+	@param tag string
+	@return {Instance}
 	
 	Returns all the objects that have the provided tag. Generally this is only called
 	internally, but may prove to be useful in certain cases.
 	
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
+	
+	-- set a custom tag (internally will be randomized if not set)
+	scopeTome:SetTag("Demonstration")
+
+	-- add the tag we just created
+	local ourTag: string = scopeTome:GetTag()
+	workspace.Cube:AddTag(ourTag)
+
+	print(scopeTome:GetObjectsWithTag(ourTag)) -> {Instance(Part, REF)}
+	```
+
 ]]
-function Tome:GetObjectsWithTag(tag: string) : {any}
+function Tome:GetObjectsWithTag(tag: string) : {Instance}
 	assert(type(tag) == "string", "Tome:GetObjectsWithTag tag argument must be a string type.")
 	
-	local objects: {[any]: string} = self.__objects
+	local objects: {[any]: DestroyMethod} = self.__objects
 	local collectedObjects: {Instance} = {}
 	
 	for object: any in objects do
-		local isInstance: boolean = typeof(object) == "Instance"
-		
-		if isInstance and object:HasTag(tag) then
+		if typeof(object) == "Instance" and object:HasTag(tag) then
 			table.insert(collectedObjects, object)
 		end
 	end
@@ -2528,126 +2756,134 @@ end
 
 --[[
 	
-	Tome:DestroyAllObjects() : ()
+	@within Tome
+	@param __ignoreDestroyingProperty boolean?
+	@return void
 	
-	Destroys all the objects contained within the Tome. Any objects contained with
-	Pages of the Tome will not be destroyed. To destroy objects contained within
-	the Pages of the Tome, Tome:Destroy is a more viable option. Generally this is
-	only called internally, however in some cases this may be helpful.
-	
-	Will thrown an error if the Tome is in the middle of being destroyed, unless
+	Destroys all objects only within the Tome, ignoring objects within pages.
+
+	Will throw an error if the Tome is in the middle of being destroyed, unless
 	the ignoreDestroyingProperty argument is set to true.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	-- construct a new Page and add an "apple" object to it
-	local somePage = someTome:AddPage()
+	local somePage = scopeTome:AddPage()
 	somePage:Add(workspace.Apple)
 	
 	-- add a "banana" object to the main Tome
-	someTome:Add(workspace.Banana)
+	scopeTome:Add(workspace.Banana)
 	
 	-- destroys only the banana as the apple was contained within a Page
-	someTome:DestroyAllObjects()
+	scopeTome:DestroyAllObjects()
 	```
 	
 ]]
-
-
 function Tome:DestroyAllObjects(__ignoreDestroyingProperty: boolean?) : ()
 	if self:IsDestroying() and not __ignoreDestroyingProperty then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "destroy all objects"))
 	end
 	
-	local objects: {[any]: any} = self.__objects
-	local objectExists: boolean = TableUtility.isEmpty(objects)
-	if objectExists then
-		local fastDestroy: boolean = self.__fastDestroy
-		local warnings: boolean = self.__warnings
-		
-		if fastDestroy then
-			for object: any, destroyMethod: any in objects do
-				-- pseudo multithreading has its downside of instantiating a thread for every object that has to be destroyed
-				-- this is currently quite slow and there are alternatives currently being looked at
-				local success: boolean, result: any = pcall(task.spawn, DestroyObject, object, destroyMethod)
-				
-				if not success and warnings then
-					FailedToDestroyObject(object, result)
-				end
-			end
-		else
-			for object: any, destroyMethod: any in objects do
-				local success: boolean, result: any = pcall(DestroyObject, object, destroyMethod)
-				
-				if not success and warnings then
-					FailedToDestroyObject(object, result)
-				end
+	local objects: {[any]: DestroyMethod} = self.__objects
+	
+	local spawnDestroy: boolean = self.__spawnDestroy
+	local warnings: boolean = self.__warnings
+	
+	if spawnDestroy then
+		for object: any, destroyMethod: any in objects do
+			local success: boolean, result: any = pcall(task.spawn, destroyObject, object, destroyMethod)
+			
+			if not success and warnings then
+				failedToDestroyObject(object, result)
 			end
 		end
-		
-		table.clear(objects)
+	else
+		for object: any, destroyMethod: any in objects do
+			local success: boolean, result: any = pcall(destroyObject, object, destroyMethod)
+			
+			if not success and warnings then
+				failedToDestroyObject(object, result)
+			end
+		end
 	end
+	
+	table.clear(objects)
 end
 
 --[[
 	
-	Tome:DestroyAllPages() : ()
+	@within Tome
+	@param __ignoreDestroyingProperty boolean?
+	@return void
 	
 	Destroys all the Pages contained within the Tome. Useful for when needing to destroy all the
-	Pages and keep the objects in the Tome.
+	Pages and keep the objects in the primary Tome.
 	
-	Will thrown an error if the Tome is in the middle of being destroyed, unless
+	Will throw an error if the Tome is in the middle of being destroyed, unless
 	the ignoreDestroyingProperty argument is set to true.
 	
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
+
+	scopeTome:Add(workspace.Cube)
+	
+	local somePage = scopeTome:AddPage()
+	somePage:Add(workspace.Cube2)
+	
+	scopeTome:DestroyAllPages()
+
+	print(scopeTome:GetObjects()) -> {[Instance(Cube, REF)] Destroy}
+	print(somePage:GetObjects()) -> {} -- cube 2 no longer remains
+
+	```
 ]]
 function Tome:DestroyAllPages(__ignoreDestroyingProperty: boolean?) : ()
 	if self:IsDestroying() and not __ignoreDestroyingProperty then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "destroy all Pages"))
 	end
 	
-	local pageExists: boolean = TableUtility.isEmpty(self.__pages)
-	if pageExists then
-		for pageName: string, page: Types.Tome in self.__pages do
-			page:Destroy()
-		end
+	for pageName: string, page: Tome in self.__pages do
+		page:Destroy()
 	end
 end
 
 --[[
 	
-	Tome:DelayDestroy(duration: number) : thread
+	@within Tome
+	@param duration number
+	@return thread
 	
 	Delays the Tome:Destroy method by a specified duration time. Returns a
 	thread which can be cancelled to stop the destroy method from calling.
 	This method will yield any thread it was invoked in.
 	
-	Will thrown an error if the Tome is in the middle of being destroyed.
+	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	someTome:Add(workspace.Apple)
+	scopeTome:Add(workspace.Apple)
 	
 	-- destroys the apple after 2 seconds
-	someTome:DelayDestroy(2)
+	scopeTome:DelayDestroy(2)
 	```
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	someTome:Add(workspace.Apple)
+	scopeTome:Add(workspace.Apple)
 	
-	-- variablize the thread
-	local thread = someTome:DelayDestroy(5)
+	local tomeDestroyThread: thread = scopeTome:DelayDestroy(5)
 	
 	task.wait(2)
 	
-	-- this prevents the Tome from being destroyed as it cancels the thread
-	task.cancel(thread)
+	-- this prevents the Tome from being destroyed as it suspends the thread
+	task.cancel(tomeDestroyThread)
 	```
 	
 ]]
@@ -2659,22 +2895,23 @@ function Tome:DelayDestroy(duration: number) : thread
 	return task.delay(duration, self:WrapDestroy())
 end
 
-
-
 --[[
 	
-	Tome:WrapDestroy() : () -> ()
+	@within Tome
+	@return () -> ()
 	
 	Wraps the Tome:Destroy method into a function that is then returned. Calling the function
 	will destroy the Tome.
+
+	Useful in cases where you might have a higher scoped
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	local destroyTome = someTome:WrapDestroy()
+	local destroyTome: () -> () = scopeTome:WrapDestroy()
 	
-	-- destroys the Tome as normal
+	-- destroys the Tome as though invoking Tome:Destroy
 	destroyTome()
 	```
 	
@@ -2687,75 +2924,73 @@ end
 
 --[[
 	
-	Tome:OnDestroy(callback: (...any) -> (), synchronous: boolean?) : () -> ()
+	@within Tome
+	@param callback (...any) -> ()
+	@param onDestroyParams OnDestroyParams?
+	@return () -> ()
 	
-	Inserts a callback into the destroy callbacks table of the Tome. Before the Tome is about
-	to destroy all of its objects and Pages, all of the callback(s) will fire first. An additional
-	argument can be provided "synchronous" which is a boolean and determines whether the callback
-	should be run synchronously.
+	Hooks a callback into the Tome that gets called after `Tome:Destroy` is invoked.
+	The callback will always be invoked after all the objects and pages have been destroyed.
+
+	Optional `OnDestroyParams` can be passed in to tell the Tome how to go about calling the
+	callback function.
+
+	`Synchronous`: Will call the callback within the same thread, which may result in yielding
+	if the callback contains yielding. The default value is `true`
+
+	`RemoveOnDestroy`: Will remove the callback function after the Tome has been destroyed.
+	This is usually only used in rarer cases, and the normal way to do this is by passing
+	in a function into the Tome instead.
+
+	The returned function can be called to remove the callback from the Tome at any time.
+
+	Will throw an error if the Tome is in the middle of being destroyed.
+
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	This method returns a function, that when called, removed the callback from the Tome.
-	The callback will *not* be removed from the Tome after it's destroyed, when a Tome becomes unused
-	it's unnecessary to free this reference from memory as the collector catches it anyway.
-	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
-	
-	someTome:OnDestroy(function()
-		print("The Tome is about to destroy all of its objects!")
+	scopeTome:OnDestroy(function()
+		print("This Tome has finished destroying itself")
 	end)
 	
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
-	local unattachCallback = someTome:OnDestroy(function()
-		print("The Tome is about to destroy all of its objects!")
+	local unattachCallback: () -> () = scopeTome:OnDestroy(function()
+		print("This Tome has finished destroying itself")
 	end)
 	
 	-- removes the callback from the Tome
 	unattachCallback()
 	
-	someTome:Destroy()
-	```
-	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
-	
-	someTome:OnDestroy(function()
-		print("The Tome is about to destroy all of its objects!")
-		
-		-- this will yield the execution of the destroy method
-		task.wait(3)
-		
-		print("And now the Tome is actually going to destroy!")
-	end, true) -- set to false to prevent yielding
-	
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
-function Tome:OnDestroy(callback: (...any) -> (), synchronous: boolean?, deferred: boolean?) : () -> ()
+function Tome:OnDestroy(callback: (...any) -> (), onDestroyParams: OnDestroyParams?) : () -> ()
 	assert(type(callback) == "function", "Tome:OnDestroy callback argument must be a function type.")
+	assert(type(onDestroyParams) == "table", "Expected argument #2 to be a table type. Got something else instead")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "attach a destroy callback"))
 	end
 	
-	local callbackData: Types.CallbackData = {
-		synchronous = synchronous,
+	local destroyCallbackData: OnDestroyCallbackData = {
 		callback = callback,
-		deferred = deferred,
+		OnDestroyParams = onDestroyParams or {
+			Synchronous = true,
+		},
 	}
-	table.insert(self.__destroyCallbacks, callbackData)
+	
+	table.insert(self.__destroyCallbacks, destroyCallbackData)
 	
 	return function()
-		local index: number? = table.find(self.__destroyCallbacks, callbackData)
+		local index: number? = table.find(self.__destroyCallbacks, destroyCallbackData)
 		if index then
 			table.remove(self.__destroyCallbacks, index)
 		end
@@ -2764,26 +2999,32 @@ end
 
 --[[
 	
-	Tome:Destroy(...any) : ()
+	@within Tome
+	@param ... any
+	@return void
 	
 	Destroys the Tome alongside any Pages and objects within it. Clears any references to
-	objects and Pages within the Tome.
+	objects and Pages within the Tome too.
 	
 	Destroy callbacks are invoked after everything is destroyed to guarantee clarity
 	Keep in mind synchronous callbacks will yield the Tome if the callback is yieldable
-	To prevent callbacks from being synchronous, use `Tome:OnDestroy(callback, false)`
+	To prevent callbacks from being synchronous, use:
+	```luau
+	Tome:OnDestroy(callback, { Synchronous = false })
+	```
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
-	```lua
-	local Tome = require(`Path`)
-	local someTome = Tome.new()
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
 	
 	-- add a cube to the Tome
-	someTome:Add(workspace.Cube)
+	scopeTome:Add(workspace.Cube)
 	
 	-- destroys the Tome, which in this case will destroy the cube
-	someTome:Destroy()
+	scopeTome:Destroy()
 	```
 	
 ]]
@@ -2791,7 +3032,7 @@ function Tome:Destroy(...: any) : ()
 	if self:IsDestroying() then
 		error(string.format([[
 			%s.
-			If Tome:Destroy is invoked frequently, using Tome:CanDestroy before attempting to destroy the Tome should help.
+			If Tome:Destroy is invoked frequently, try using Tome:CanDestroy before attempting to destroy the Tome.
 		]], string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "destroy the Tome")))
 	end
 	
@@ -2802,13 +3043,18 @@ function Tome:Destroy(...: any) : ()
 	
 	self.__destroying = false
 	
-	for _: number, callbackData: Types.CallbackData in self.__destroyCallbacks do
+	for index: number, callbackData: OnDestroyCallbackData in self.__destroyCallbacks do
 		local callback: (...any) -> () = callbackData.callback
+		local onDestroyParams: OnDestroyParams = callbackData.OnDestroyParams
 		
-		if callbackData.synchronous then
+		if onDestroyParams.Synchronous then
 			callback(...)
 		else
-			task[callbackData.deferred and "defer" or "spawn"](callback, ...)
+			task[onDestroyParams.Deferred and "defer" or "spawn"](callback, ...)
+		end
+		
+		if onDestroyParams.RemoveOnDestroy then
+			table.remove(self.__destroyCallbacks, index)
 		end
 	end
 end

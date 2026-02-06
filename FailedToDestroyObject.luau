@@ -1,6 +1,17 @@
 --!strict
 
-local function failedToDestroyObject(object: any, result: any) : ()
+--[[
+
+	@param object any
+	@param result any
+	@return void
+
+	Throws a warning if the provided object could not be destroyed.
+	If the provided object is a table, and also contains a __tostring metamethod, then return a different message
+	This is in rarer cases where objects use a different way to stingify themselves
+	
+]]
+return function(object: any, result: any) : ()
 	if type(object) == "table" then
 		local metatable: any = getmetatable(object)
 		if metatable and type(metatable.__tostring) == "function" then
@@ -17,5 +28,3 @@ local function failedToDestroyObject(object: any, result: any) : ()
 		Following error message: %s
 	]], object, result))
 end
-
-return failedToDestroyObject
