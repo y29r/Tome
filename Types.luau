@@ -85,6 +85,7 @@ export type Tome = {
 	Instance: (self: Tome, instanceName: string, properties: {[string]: any}?) -> Instance,
 	FromExisting: (self: Tome, instance: Instance) -> Instance,
 	Attach: (self: Tome, object: any) -> () -> (),
+	AttachTuple: (self: Tome, ...any) -> {any},
 	
 	HookRunServiceSignal: (self: Tome, signalName: RunServiceSignalName, listener: (deltaTime: number) -> () | (time: number, deltaTime: number) -> ()) -> RBXScriptConnection,
 	BindRenderStepped: (self: Tome, name: string, renderPriority: number?, listener: (deltaTime: number) -> ()) -> () -> (),

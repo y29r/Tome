@@ -1848,7 +1848,7 @@ end
 	
 	@within Tome
 	@param object any
-	@return () -> ()
+	@return (() -> ()) | RBXScriptConnection | Signal.Connection
 	
 	Attaches an object to the Tome. If the object is an Instance, the Destroying Signal of
 	the Instance will be listened for, and once it's fired, the Tome will destroy itself.
@@ -1882,7 +1882,7 @@ end
 	```
 	
 ]]
-function Tome:Attach(object: any) : (() -> ())?
+function Tome:Attach(object: any) : (() -> ()) | RBXScriptConnection | Signal.Connection?
 	local objectType: string = realTypeOf(object)
 	
 	if objectType == "Tome" then
@@ -1930,11 +1930,69 @@ function Tome:Attach(object: any) : (() -> ())?
 				ancestryConnection:Disconnect()
 			end
 		end, FunctionType)
-	elseif objectType == "Signal" or (objectType == "table" and type(object.Connect) == "function") or objectType == "RBXScriptSignal" then
+	elseif objectType == "Signal"
+		or (objectType == "table" and type(object.Connect) == "function")
+		or objectType == "RBXScriptSignal"
+	then
 		return object:Connect(self:WrapDestroy())
 	end
 	
 	return throwError(string.format("Could not attach object: %* to Tome.", object), "Ensure the provided object is either a Tome, Signal, Instance or class with a :Connect method.")
+end
+
+--[[
+
+	@within Tome
+	@return {RBXScriptConnection | () -> () | Signal.Connection}
+	
+	Takes in tuple object arguments which are then passed through self:Attach(object)
+	each result added to an array. After iteration, said array will be returned
+	
+	The array consists of either connections or functions based on the objects passed in
+	The order of the *attachments* will always be the same as the order the tuple was passed with
+	
+	TODO: At some point improve the return type, perhaps returning a function to
+		unattach all the attachments.
+	
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
+	
+	scopeTome:AddTuple(workspace.Cube, workspace.Cube2)
+	scopeTome:Add(function()
+		print("Either cube, or cube2 was destroyed!")
+	end)
+	
+	workspace.Cube2:Destroy()
+	```
+	
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
+	
+	-- use the variable to get the attachments
+	local attachments: {any} = scopeTome:AddTuple(workspace.Cube, workspace.Cube2)
+	
+	scopeTome:Add(function()
+		print("Either cube, or cube2 was destroyed!")
+	end)
+	
+	attachments[1]:Disconnect() -- since cube is an instance, this will be a connection, so let's disconnect it
+	
+	-- destroy the cube and nothing will happen as we disconnected that specific attachemtn
+	workspace.Cube:Destroy()
+	```
+	
+]]
+function Tome:AttachTuple(...: any) : {any}
+	local attachments: {any} = {}
+	
+	for index: number, object: any in {...} do
+		table.insert(attachments, self:Attach(object))
+	end
+	
+	return attachments
 end
 
 --[[
