@@ -5,6 +5,9 @@
 -- Deps: [Signal, Symbol]
 -- A basic clean up module to handle Instances, custom classes and function clean ups.
 --[[
+	v1.2.c-5:
+		Adds Tome:AttachTuple
+	
 	v1.2.c-4:
 		Made a small optimization to Tome:Tween
 		Fixed typing for Tome:SetTag
@@ -144,7 +147,8 @@
 	Tome:AddFromArray : Adds objects from a provided array to the Tome.
 	Tome:AddPromise : Adds a standard Promise to the Tome.
 	Tome:AddPage : Constructs a Page (alias for Tome) and adds it to the Tome.
-	Tome:Attach : Attaches an instance destroying signal to the Tome.
+	Tome:Attach : Attaches the Tome to an object. When the object is destroyed, the Tome will also destroy.
+	Tome:AttachTuple : Same as Tome:Attach but tuple arguments can be passed.
 	Tome:BindRenderStepped : Binds to the RunService:BindToRenderStep method.
 	Tome:CanDestroy : Returns whether the Tome can be destroyed or not.
 	Tome:Clone : Clones an object and adds it to the Tome.
