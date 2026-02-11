@@ -29,13 +29,13 @@ return function(object: any, destroyMethod: Types.DestroyMethod) : ()
 		object:Destroy()
 	elseif destroyMethod == ThreadType then
 		--TODO: Manage other thread states and perhaps allow for something more flexible and robust
-		local threadStatus = coroutine.status(object)
+		local threadStatus: "dead" | "normal" | "running" | "suspended" = coroutine.status(object)
 		
 		if threadStatus ~= THREAD_DEAD_STATE then
 			pcall(task.cancel, object)
 		end
 	else
-		local destroyFunction = object[destroyMethod]
+		local destroyFunction: ((object: any) -> ())? = object[destroyMethod]
 		if destroyFunction then
 			pcall(destroyFunction, object)
 		end
