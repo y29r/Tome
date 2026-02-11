@@ -5,6 +5,9 @@
 -- Deps: [Signal, Symbol]
 -- A basic clean up module to handle Instances, custom classes and function clean ups.
 --[[
+	v1.2.c-6:
+		Updated Tome:AttachTuple to return a standard clean up function, alongside the attachments array
+		
 	v1.2.c-5:
 		Adds Tome:AttachTuple
 	
@@ -238,6 +241,8 @@ export type DestroyMethod = Types.DestroyMethod
 export type RunServiceSignalName = Types.RunServiceSignalName
 export type OnDestroyParams = Types.OnDestroyParams
 export type OnDestroyCallbackData = Types.OnDestroyCallbackData
+
+export type Attachment = Types.Attachment
 
 local RunService: RunService = game:GetService("RunService")
 local HttpService: HttpService = game:GetService("HttpService")
@@ -1890,7 +1895,7 @@ function Tome:Attach(object: any) : (() -> ()) | RBXScriptConnection | Signal.Co
 	local objectType: string = realTypeOf(object)
 	
 	if objectType == "Tome" then
-		return object:Add(self:WrapDestroy())
+		return object:Add(self:WrapDestroy(), FunctionType)
 	elseif objectType == "Instance" then
 		if not object:IsDescendantOf(game) then
 			return
@@ -1947,23 +1952,31 @@ end
 --[[
 
 	@within Tome
-	@return {RBXScriptConnection | () -> () | Signal.Connection}
+	@param ...any
+	@return () -> (), {Attachment}
 	
 	Takes in tuple object arguments which are then passed through self:Attach(object)
-	each result added to an array. After iteration, said array will be returned
+	each result added to an array. After iteration, a clean up function and *attachment* array will be returned
 	
 	The array consists of either connections or functions based on the objects passed in
 	The order of the *attachments* will always be the same as the order the tuple was passed with
+	The array is immutable.
 	
-	TODO: At some point improve the return type, perhaps returning a function to
-		unattach all the attachments.
+	When the clean up function is called, all the attachments will be cleaned up and disposed of properly.
+	
+	Tome doesn't automatically add the clean up function into itself, if you need that behaviour, wrap
+	the clean up function as such:
+	```luau
+	local cleanUp: () -> () = scopeTome:AttachTuple(workspace.Cube, workspace.Cube2)
+	scopeTome:FastAdd(cleanUp, Tome.FunctionType)
+	```
 	
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
 	local scopeTome = Tome.new()
 	
-	scopeTome:AddTuple(workspace.Cube, workspace.Cube2)
+	scopeTome:AttachTuple(workspace.Cube, workspace.Cube2)
 	scopeTome:Add(function()
 		print("Either cube, or cube2 was destroyed!")
 	end)
@@ -1976,7 +1989,25 @@ end
 	local scopeTome = Tome.new()
 	
 	-- use the variable to get the attachments
-	local attachments: {any} = scopeTome:AddTuple(workspace.Cube, workspace.Cube2)
+	local cleanUpAttachments: () -> () = scopeTome:AttachTuple(workspace.Cube, workspace.Cube2)
+	
+	scopeTome:Add(function()
+		print("Either cube, or cube2 was destroyed!")
+	end)
+	
+	cleanUpAttachments() -- clean up all the attachments, freeing any from the Tome as well
+	
+	-- nothing will happen since the attachments were cleaned up
+	workspace.Cube:Destroy()
+	workspace.Cube2:Destroy()
+	```
+	
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
+	
+	-- use the variable to get the attachments
+	local cleanUpAttachments: () -> (), attachments: {any} = scopeTome:AttachTuple(workspace.Cube, workspace.Cube2)
 	
 	scopeTome:Add(function()
 		print("Either cube, or cube2 was destroyed!")
@@ -1989,14 +2020,26 @@ end
 	```
 	
 ]]
-function Tome:AttachTuple(...: any) : {any}
-	local attachments: {any} = {}
+function Tome:AttachTuple(...: any) : (() -> (), {Attachment})
+	local attachments: {Attachment} = {}
 	
 	for index: number, object: any in {...} do
 		table.insert(attachments, self:Attach(object))
 	end
 	
-	return attachments
+	return function()
+		for index: number, attachment: Attachment in attachments do
+			if type(attachment) == "function" then
+				attachment()
+			elseif typeof(attachment) == "RBXScriptConnection" or (type(attachment) == "table" and attachment.Connected and attachment.Disconnect) then
+				if attachment.Connected then
+					(attachment :: any):Disconnect()
+				end
+			end
+		end
+		
+		self:RemoveFromArray(attachments)
+	end, table.freeze(attachments)
 end
 
 --[[
