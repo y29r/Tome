@@ -93,12 +93,11 @@ Metaprops are a way to tell Tome how to go about dealing with objects as a whole
     Though Tome optimizes it into a `task.spawn` call directly :)
     This is useful for when you want object destroy methods to not yield the main destroy thread which can cause serious issues if not used well.
   - `Warnings` : Whether warnings that aren't serious should be outputed.
-  - `Tagging` : Whether Tome uses Tagging[^1]
+  - `Tagging` : Whether Tome uses [Tagging](https://github.com/y29r/Tome/edit/main/README.md#tagging)
   - `UseParentMetaprops` : Whether any Pages should inherit the same metaprops as the parent.
 
 ## Tagging
-[^1]: Tagging
-- Tagging uses [CollectionService](https://create.roblox.com/docs/reference/engine/classes/CollectionService) to track [Instance-based](https://create.roblox.com/docs/reference/engine/datatypes/Instance) objects. Tome will check if its internal tag has been removed from the object, if it has, that means the object was destroyed which will tell Tome to remove it from itself automatically.
+Tagging uses [CollectionService](https://create.roblox.com/docs/reference/engine/classes/CollectionService) to track [Instance-based](https://create.roblox.com/docs/reference/engine/datatypes/Instance) objects. Tome will check if its internal tag has been removed from the object, if it has, that means the object was destroyed which will tell Tome to remove it from itself automatically.
 
 ## Performance
 Performance is very similar to other garbage collection modules such as Janitor, Trove and Maid.
