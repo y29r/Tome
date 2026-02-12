@@ -306,6 +306,7 @@ local DEFAULT_USE_PARENT_METAPROPS: boolean = Static.UseParentMetaprops
 
 --[[
 	
+	@constructor Tome.new()
 	@param metaprops Metaprops
 	@return Tome
 	
