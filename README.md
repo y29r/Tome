@@ -93,7 +93,7 @@ Metaprops are a way to tell Tome how to go about dealing with objects as a whole
     Though Tome optimizes it into a `task.spawn` call directly :)
     This is useful for when you want object destroy methods to not yield the main destroy thread which can cause serious issues if not used well.
   - `Warnings` : Whether warnings that aren't serious should be outputed.
-  - `Tagging` : Whether Tome uses [Tagging](https://github.com/y29r/Tome/edit/main/README.md#tagging)
+  - `Tagging` : Whether Tome uses [Tagging](https://github.com/y29r/Tome/blob/main/README.md#tagging)
   - `UseParentMetaprops` : Whether any Pages should inherit the same metaprops as the parent.
 
 ## Tagging
