@@ -1,3 +1,3 @@
 --!strict
 
-return "Tome3 v1.2.c-6"
+return "Tome3 v1.2.c-7"

@@ -71,6 +71,8 @@ export type Tome = {
 	
 	new: (metaprops: Metaprops?) -> Tome,
 	
+	Is: (object: any) -> boolean,
+	
 	SetTag: (self: Tome, tag: string) -> Tome,
 	GetTag: (self: Tome) -> string?,
 	

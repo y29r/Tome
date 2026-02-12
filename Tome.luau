@@ -5,6 +5,9 @@
 -- Deps: [Signal, Symbol]
 -- A basic clean up module to handle Instances, custom classes and function clean ups.
 --[[
+	v1.2.c-7:
+		Adds Tome.Is
+			
 	v1.2.c-6:
 		Updated Tome:AttachTuple to return a standard clean up function, alongside the attachments array
 		
@@ -345,6 +348,48 @@ function Tome.new(metaprops: Types.Metaprops?) : Tome
 	}, Tome) :: any
 	
 	return self
+end
+
+--[[
+	
+	@within Tome
+	@param object any
+	@return boolean
+	
+	Checks if the provided object is a Tome.
+	
+	Will check against the direct metatable first. If the value is equal then
+	it's definitely a Tome.
+	
+	If the provided object is a table with a couple of Tome's methods inside
+	it then it's safe to assume it's coming from another module.
+	
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local scopeTome = Tome.new()
+	
+	print("#1 Is this object a Tome? ", Tome.Is({})) -- false
+	print("#2 Is this object a Tome? ", Tome.Is(scopeTome)) -- true
+	print("#3 Is this object a Tome? ", Tome.Is()) -- false
+	```
+	
+]]
+function Tome.Is(object: any) : boolean
+	if type(object) ~= "table" then
+		return false
+	end
+	
+	if getmetatable(object) == Tome then
+		return true
+	end
+	
+	-- these methods are from all versions of Tome, so if they exist
+	-- we know that this is at least some kind of Tome.
+	local usesTomeMethods: boolean = type(object.Destroy) == "function"
+		and type(object.BindRenderStepped) == "function"
+	
+	return usesTomeMethods
 end
 
 --[[
