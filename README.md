@@ -58,6 +58,7 @@ An object-oriented garbage collection module for luau
 	- `Tome:Tween` : Tweens an object and adds the Tween to the Tome.
 	- `Tome:Table` : Adds a table inside the Tome and using table.clear as the destroy method
 	- `Tome:OnDestroy` : Attaches a callback that listens for when the Tome destroys. This callback does **NOT** get cleaned up by default, however you can provide this with the params as well as manually cleaning it up. 
+- `Tome.Is` : Returns whether the provided object is a Tome object or not.
 
 # Example
 Creating a Tome and adding things into it is very simple:
