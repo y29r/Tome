@@ -4,47 +4,47 @@ An object-oriented garbage collection module for luau
 ## Methods
 - `Tome.new` : Instantiates a new Tome with provides these methods:
 	- `Tome:Add` : Adds an object to the Tome.
-	- `Tome:AddTuple` : Adds multiple objects to the Tome.
-	- `Tome:AddFromArray` : Adds objects from a provided array to the Tome.
+	- `Tome:AddTuple` : Adds tuple objects to the Tome.
+	- `Tome:AddFromArray` : Adds objects from an array to the Tome.
 	- `Tome:AddPromise` : Adds a standard Promise to the Tome.
 	- `Tome:AddPage` : Constructs a Page (alias for Tome) and adds it to the Tome.
-	- `Tome:Attach` : Attaches the Tome to an object. When the object is destroyed, the Tome will also destroy.
-	- `Tome:AttachTuple` : Same as Tome:Attach but tuple arguments can be passed.
+	- `Tome:Attach` : Attaches the Tome to an object. When the object is destroyed, the Tome will destroy too.
+	- `Tome:AttachTuple` : Same as Tome:Attach but tuple objects can be passed.
 	- `Tome:BindRenderStepped` : Binds to the RunService:BindToRenderStep method.
 	- `Tome:CanDestroy` : Returns whether the Tome can be destroyed or not.
-	- `Tome:Clone` : Clones an object and adds it to the Tome.
-	- `Tome:Connect` : Connects a function to a Signal and adds the connection to the Tome.
-	- `Tome:Once` : Connects a function to a Signal once and adds the connection to the Tome.
-	- `Tome:Construct` : Constructs a custom class and adds it to the Tome.
-	- `Tome:Delay` : Delays a function with task.delay and adds it to the Tome.
-	- `Tome:extend` : Alias for Tome:AddPage.
-	- `Tome:Extend` : Alias for Tome:AddPage.
-	- `Tome:Spawn` : Spawns a function with task.spawn and adds it to the Tome.
-	- `Tome:Defer` : Defers a function with task.defer and adds it to the Tome.
-	- `Tome:DelayDestroy` : Destroys the Tome after the specified duration.
-	- `Tome:Destroy` : Destroys the Tome.
-	- `Tome:DestroyAllObjects` : Destroys all the objects contained within the Tome.
-	- `Tome:DestroyAllPages` : Destroys all the Pages contained within the Tome.
+	- `Tome:Clone` : `:Clone`s an object and adds it to the Tome.
+	- `Tome:Connect` : Connects a function to a Signal and adds that connection to the Tome.
+	- `Tome:Once` : Connects a function to a Signal once and adds that connection to the Tome.
+	- `Tome:Construct` : Constructs a custom class (via `Class.new`) and adds it to the Tome.
+	- `Tome:Delay` : Creates a thread via `task.delay` and adds that thread to the Tome.
+	- `Tome:extend` : Alias for `Tome:AddPage`.
+	- `Tome:Extend` : Alias for `Tome:AddPage`.
+	- `Tome:Spawn` : Creates a thread via `task.spawn` and adds that thread to the Tome.
+	- `Tome:Defer` : Creates a thread via `task.defer` and adds that thread to the Tome.
+	- `Tome:DelayDestroy` : Destroys the Tome after a specified duration.
+	- `Tome:Destroy` : Destroys the Tome (calls `Tome:DestroyAllObjects` and `Tome:DestroyAllPages` internally, alongside calling all `:OnDestroy` callback hooks)
+	- `Tome:DestroyAllObjects` : Destroys all the objects within the Tome.
+	- `Tome:DestroyAllPages` : Destroys all the Pages within the Tome.
 	- `Tome:DestroyObject` : Destroys the provided object if it exists within the Tome.
-	- `Tome:DestroyObjects` : Destroys the provided objects if they exists within the Tome.
+	- `Tome:DestroyObjects` : Destroys the provided objects if they exist within the Tome.
 	- `Tome:DestroyObjectsWithTag` : Destroys all the objects in the Tome that have the specified tag.
-	- `Tome:DestroyObjectsOfType` : Destroys all the objects in the Tome that have the specified type.
-	- `Tome:Contains` : Returns whether the specified object exists within the Tome.
-	- `Tome:Has` : Alias for Tome:Contains.
-	- `Tome:FromExisting` : Creates an Instance with Instance.fromExisting and adds it to the Tome.
-	- `Tome:GetObjects` : Returns all the objects contained within the Tome.
-	- `Tome:GetObjectsWithTag` : Returns all the objects contained within the Tome that contain a provided tag.
+	- `Tome:DestroyObjectsOfType` : Destroys all the objects in the Tome that have the specified type (`Instance`s will use `:IsA` methods to check elgibility)
+	- `Tome:Contains` : Returns whether the specified object exists in the Tome.
+	- `Tome:Has` : Alias for `Tome:Contains`.
+	- `Tome:FromExisting` : Creates an Instance with `Instance.fromExisting` and adds it to the Tome.
+	- `Tome:GetObjects` : Returns all the objects within the Tome.
+	- `Tome:GetObjectsWithTag` : Returns all the objects within the Tome that have the given tag.
 	- `TOme:GetObjectsOfType` : Returns all the objects of a specified type name.
 	- `Tome:GetPage` : Returns a Page from the Tome given a name.
 	- `Tome:GetParentTome` : Gets the parent Tome (if it has one)
-	- `Tome:GetTag` : Returns the internal tag the Tome uses to automatically remove destroyed instances.
-	- `Tome:GivePage` : Moves a Page to another Tome or Page.
-	- `Tome:HookRunServceSignal` : Connects to any of the RunService signals given a name
-	- `Tome:Instance` : Creates an Instance with Instance.new and adds it to the Tome.
-	- `Tome:IsDestroying` : Returns whether the Tome is currently destroying or not.
-	- `Tome:Move` : Moves an object from the current Tome to another.
+	- `Tome:GetTag` : Returns the internal tag the Tome uses to automatically remove destroyed instances via [Tagging](https://github.com/y29r/Tome/blob/main/README.md#tagging).
+	- `Tome:GivePage` : Moves a Page into another Tome.
+	- `Tome:HookRunServceSignal` : Connects to any of the RunService signals given a name and adds the connection into the Tome.
+	- `Tome:Instance` : Creates an Instance with `Instance.new` and adds it to the Tome.
+	- `Tome:IsDestroying` : Returns whether the Tome is currently in a destroying state.
+	- `Tome:Move` : Moves an object from the current Tome into another.
 	- `Tome:Parent` : Parents the Tome to another Tome.
-	- `Tome:Remove` : Removes an object from the Tome (not destroying it)
+	- `Tome:Remove` : Removes an object from the Tome (will **not** destroy it)
 	- `Tome:RemoveTuple` : Removes multiple objects from the Tome.
 	- `Tome:RemoveFromArray` : Removes objects from an array of objects from the Tome.
 	- `Tome:RemoveObjectsWithTag` : Removes objects with a specified tag from the Tome.
@@ -52,11 +52,11 @@ An object-oriented garbage collection module for luau
 	- `Tome:Rename` : Renames the Tome.
 	- `Tome:RipPage` : Destroys the provided page and removes it from the Tome.
 	- `Tome:RipPages` : Destroys and removes all the Pages within a Tome.
-	- `Tome:SetTag` : Overrides the default Tome tag used for Instances.
-	- `Tome:Signal` : Constructs a standard Signal class and adds it to the Tome.
-	- `Tome:UnbindRenderStepped` : Unbinds a binding made with Tome:BindRenderStepped.
-	- `Tome:Tween` : Tweens an object and adds the Tween to the Tome.
-	- `Tome:Table` : Adds a table inside the Tome and using table.clear as the destroy method
+	- `Tome:SetTag` : Overrides the default Tome tag used for [Tagging](https://github.com/y29r/Tome/blob/main/README.md#tagging).
+	- `Tome:Signal` : Constructs a standard Signal and adds it to the Tome and returns it.
+	- `Tome:UnbindRenderStepped` : Unbinds a binding made with `Tome:BindRenderStepped`.
+	- `Tome:Tween` : Creates a Tween and adds it to the Tome. (Includes extra features mentioned within [Tome-main](https://github.com/y29r/Tome/blob/main/Tome.luau))
+	- `Tome:Table` : Adds a table inside the Tome and uses `table.clear` as the destroy method.
 	- `Tome:OnDestroy` : Attaches a callback that listens for when the Tome destroys. This callback does **NOT** get cleaned up by default, however you can provide this with the params as well as manually cleaning it up. 
 - `Tome.Is` : Returns whether the provided object is a Tome object or not.
 
