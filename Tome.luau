@@ -5,6 +5,12 @@
 -- Deps: [Signal, Symbol]
 -- A basic clean up module to handle Instances, custom classes and function clean ups.
 --[[
+	v1.2.c-9:
+		All versions from here will now be put directly to the Github
+		and all new versions will be pushed as packages with changes audited under the description.
+		
+		Tome.VERSION will continue to update for backwards compatability for now.
+	
 	v1.2.c-8:
 		Adds Tome.schedule
 		Implemented an internal scheduler for Tome to use in the future
