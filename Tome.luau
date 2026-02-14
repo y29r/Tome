@@ -412,6 +412,25 @@ local scheduledObjectEntries: {ScheduledObjectEntry} = {}
 	Schedules an object to be deleted after the given life time. Works similarly to
 	`Debris:AddItem`. Any scheduled objects will also remain in the heap even if the main thread dies
 	
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	
+	Tome.schedule(workspace.Part, 2.0) -- schedules the part to be destroyed after 2 seconds
+	```
+	
+	```luau
+	local Tome = require("../Path/To/Tome")
+	
+	local part = Tome.schedule(workspace.Part2, 3) -- schedular uses generics to return the object afterwards for some useful cases
+	
+	Tome.schedule(function() -- you can insert any objects that go inside Tome as well, not just `Instance`s i.e. functions, threads, classes.
+		print("hello")
+	end, 2)
+	
+	script:Destroy() -- both the scheduled objects above will will get cleared up, even after the main thread dies
+	```
+	
 ]]
 function Tome.schedule<object>(object: object, lifeTime: number) : object
 	assert(type(lifeTime) == "number", "Expected argument #2 lifeTime to be a number type")
