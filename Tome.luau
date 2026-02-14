@@ -5,6 +5,10 @@
 -- Deps: [Signal, Symbol]
 -- A basic clean up module to handle Instances, custom classes and function clean ups.
 --[[
+	v1.2.c-8:
+		Adds Tome.schedule
+		Implemented an internal scheduler for Tome to use in the future
+		
 	v1.2.c-7:
 		Adds Tome.Is
 			
@@ -148,6 +152,7 @@
 	
 	Tome.new : Instantiates a new Tome.
 	Tome.Is : Checks whether the provided object is a Tome.
+	Tome.schedule : Schedules an object to be destroyed after a given life time.
 	
 	Tome:Add : Adds an object to the Tome.
 	Tome:AddTuple : Adds multiple objects to the Tome.
@@ -247,6 +252,7 @@ export type OnDestroyParams = Types.OnDestroyParams
 export type OnDestroyCallbackData = Types.OnDestroyCallbackData
 
 export type Attachment = Types.Attachment
+export type ScheduledObjectEntry = Types.ScheduledObjectEntry
 
 local RunService: RunService = game:GetService("RunService")
 local HttpService: HttpService = game:GetService("HttpService")
@@ -393,6 +399,103 @@ function Tome.Is(object: any) : boolean
 	
 	return usesTomeMethods
 end
+
+local scheduledObjectEntries: {ScheduledObjectEntry} = {}
+
+--[[
+	
+	@within Tome
+	@param object any
+	@param lifeTime number
+	@return void
+	
+	Schedules an object to be deleted after the given life time. Works similarly to
+	`Debris:AddItem`. Any scheduled objects will also remain in the heap even if the main thread dies
+	
+]]
+function Tome.schedule<object>(object: object, lifeTime: number) : object
+	assert(type(lifeTime) == "number", "Expected argument #2 lifeTime to be a number type")
+	
+	local destroyMethod: DestroyMethod = getDestroyMethodForObject(object)
+	
+	table.insert(scheduledObjectEntries, {
+		Object = object,
+		DestroyMethod = destroyMethod,
+		ExpireTime = os.clock() + lifeTime,
+	})
+	
+	local heapSize: number = #scheduledObjectEntries
+	
+	while heapSize > 1 do
+		local parentIndex: number = math.floor(heapSize * 0.5)
+		if scheduledObjectEntries[parentIndex].ExpireTime <= scheduledObjectEntries[heapSize].ExpireTime then
+			break
+		end
+		
+		scheduledObjectEntries[parentIndex], scheduledObjectEntries[heapSize] = scheduledObjectEntries[heapSize], scheduledObjectEntries[parentIndex]
+		heapSize = parentIndex
+	end
+	
+	return object
+end
+
+--[[
+	
+	@param heap {ScheduledObjectEntry}
+	@return ScheduledObjectEntry?
+	
+	Removes the earliest scheduled entry and reshifts the heap ot fix broken indexes.
+	
+]]
+local function popScheduledObjectEntry(heap: {ScheduledObjectEntry}) : ScheduledObjectEntry
+	local heapSize: number = #heap
+	
+	local rootEntry: ScheduledObjectEntry = heap[1]
+	heap[1] = heap[heapSize]
+	heap[heapSize] = nil
+	
+	heapSize -= 1
+	
+	local index: number = 1
+	
+	while true do
+		local smallestIndex: number = index
+		
+		local leftIndex: number = index * 2
+		local rightIndex: number = leftIndex + 1
+		
+		if leftIndex <= heapSize and heap[leftIndex].ExpireTime < heap[smallestIndex].ExpireTime then
+			smallestIndex = leftIndex
+		end
+		
+		if rightIndex <= heapSize and heap[rightIndex].ExpireTime < heap[smallestIndex].ExpireTime then
+			smallestIndex = rightIndex
+		end
+		
+		if smallestIndex == index then
+			break
+		end
+		
+		heap[index], heap[smallestIndex] = heap[smallestIndex], heap[index]
+		index = smallestIndex
+	end
+	
+	return rootEntry
+end
+
+local function stepSchedular(deltaTime: number) : ()
+	local currentTime: number = os.clock()
+	
+	while
+		scheduledObjectEntries[1] and scheduledObjectEntries[1].ExpireTime <= currentTime
+	do
+		local entry: ScheduledObjectEntry = popScheduledObjectEntry(scheduledObjectEntries)
+		
+		destroyObject(entry.Object, entry.DestroyMethod)
+	end
+end
+
+RunService.Heartbeat:Connect(stepSchedular)
 
 --[[
 	

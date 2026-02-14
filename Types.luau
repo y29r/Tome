@@ -28,6 +28,12 @@ export type RunServiceSignalName = "RenderStepped"
 | "PreSimulation"
 | "Stepped"
 
+export type ScheduledObjectEntry = {
+	Object: any,
+	DestroyMethod: DestroyMethod,
+	ExpireTime: number,
+}
+
 export type TweenMetadata = {
 	Play: boolean?,
 	RemoveOnComplete: boolean?,
@@ -72,6 +78,7 @@ export type Tome = {
 	new: (metaprops: Metaprops?) -> Tome,
 	
 	Is: (object: any) -> boolean,
+	schedule: <object>(object: object, lifeTime: number) -> object,
 	
 	SetTag: (self: Tome, tag: string) -> Tome,
 	GetTag: (self: Tome) -> string?,
