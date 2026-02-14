@@ -400,7 +400,211 @@ function Tome.Is(object: any) : boolean
 	return usesTomeMethods
 end
 
+
+
+--[[
+	
+	@param index number
+	@param hash {Entry}
+	@param indexMap {[any]: number}
+	@return void
+	
+	Moves the entry at index upward in the heap until it reaches
+	the correct position based on its expiration time.
+	
+	This is used after appending a new entry or updating an existing
+	entry to expire sooner.
+	
+	If the entry expires earlier than its parent, they are swapped.
+	The index map is updated on every swap so lookups remain accurate (hopefully)
+	
+]]
+local function bubbleUpSchedule(
+	index: number,
+	hash: {ScheduledObjectEntry},
+	indexMap: {[any]: number}
+) : ()
+	while index > 1 do
+		local parentIndex: number = math.floor(index * 0.5)
+		if hash[parentIndex].ExpiresAt <= hash[index].ExpiresAt then
+			break
+		end
+		
+		hash[parentIndex], hash[index] = hash[index], hash[parentIndex]
+		
+		indexMap[hash[parentIndex].Object] = parentIndex
+		indexMap[hash[index].Object] = index
+		
+		index = parentIndex
+	end
+end
+
+--[[
+	
+	@param index number
+	@param hash {Entry}
+	@param indexMap {[any]: number}
+	@return void
+	
+	Moves the entry at index downward in the heap until both of its
+	children expire later than it.
+	
+	This is used after removing the root or updating an entry to expire
+	later than before.
+	
+	The entry is swapped with whichever child expires the soonest.
+	The index map is updated on every swap to keep everything up to date.
+	
+]]
+local function bubbleDownSchedule(
+	index: number,
+	hash: {ScheduledObjectEntry},
+	indexMap: {[any]: number}
+) : ()
+	local hashSize: number = #hash
+
+	while true do
+		local leftIndex: number = index * 2
+		local rightIndex: number = leftIndex + 1
+		local smallestIndex: number = index
+		
+		if leftIndex <= hashSize and hash[leftIndex].ExpiresAt < hash[smallestIndex].ExpiresAt then
+			smallestIndex = leftIndex
+		end
+		
+		if rightIndex <= hashSize and hash[rightIndex].ExpiresAt < hash[smallestIndex].ExpiresAt then
+			smallestIndex = rightIndex
+		end
+		
+		if smallestIndex == index then
+			break
+		end
+		
+		hash[index], hash[smallestIndex] = hash[smallestIndex], hash[index]
+		
+		indexMap[hash[index].Object] = index
+		indexMap[hash[smallestIndex].Object] = smallestIndex
+		
+		index = smallestIndex
+	end
+end
+
+--[[
+	
+	@param heap {ScheduledObjectEntry}
+	@return ScheduledObjectEntry
+	
+	Removes the earliest scheduled entry and reshifts the heap; fixing invalid indexes.
+	Expectes at least one entry, and will throw an error if none exist.
+	
+]]
+local function popRootScheduledObject(
+	heap: {ScheduledObjectEntry},
+	indexMap: {[any]: number}
+) : ScheduledObjectEntry
+	local heapSize: number = #heap
+	local rootEntry: ScheduledObjectEntry = heap[1]
+	
+	heap[1] = heap[heapSize]
+	heap[heapSize] = nil
+	
+	indexMap[rootEntry.Object] = nil
+	
+	if heapSize > 1 then
+		indexMap[heap[1].Object] = 1
+		
+		bubbleDownSchedule(1, heap, indexMap)
+	end
+	
+	return rootEntry
+end
+
+local Schedular = {}
+Schedular.DefaultSchedularSignalName = "Heartbeat" :: RunServiceSignalName
+Schedular.__stepConnection = nil :: RBXScriptConnection?
+
+-- no point in storing these in the Schedular because they shouldn't be changed anyway
 local scheduledObjectEntries: {ScheduledObjectEntry} = {}
+local objectToIndexMap: {[any]: number} = {}
+
+--[[
+	
+	@return void
+	
+	Checks the object entries hash and pops an entry if its expiration time is less (or equal) to the current time
+	If no object entries exist, the schedular will stop itself from running to save resources.
+	
+]]
+function Schedular.stepSchedular()
+	local currentTime: number = os.clock()
+	
+	if Schedular.isScheduleEmpty() then
+		Schedular.stopSchedular()
+		return
+	end
+	
+	while
+		scheduledObjectEntries[1] and scheduledObjectEntries[1].ExpiresAt <= currentTime
+	do
+		local poppedEntry: ScheduledObjectEntry = popRootScheduledObject(scheduledObjectEntries, objectToIndexMap)
+		
+		destroyObject(poppedEntry.Object, poppedEntry.DestroyMethod)
+	end
+end
+
+--[[
+	
+	@return boolean
+	
+	Returns whether the schedular is currently running
+	
+]]
+function Schedular.isSchedularRunning() : boolean
+	return Schedular.__stepConnection and Schedular.__stepConnection.Connected or false
+end
+
+--[[
+	
+	@return boolean
+	
+	Returns whether the schedular is empty (whether the object entries hash is empty)
+	
+]]
+function Schedular.isScheduleEmpty() : boolean
+	return #scheduledObjectEntries == 0
+end
+
+--[[
+	
+	@param runServiceSignalName RunServiceSignalName?
+	@return void
+	
+	Connections a RunService signal to the `Schedular.stepSchedular` function.
+	Optionally you can start the schedular with a given signal name or:
+	You can set the Schedular.DefaultSchedularSignalName to any RunService signal name.
+	
+]]
+function Schedular.startSchedular(runServiceSignalName: RunServiceSignalName?) : ()
+	Schedular.stopSchedular()
+	
+	Schedular.__stepConnection = (RunService :: any)
+		[runServiceSignalName or Schedular.DefaultSchedularSignalName]:Connect(Schedular.stepSchedular)
+end
+
+--[[
+	
+	@return void
+	
+	Disconnects the schedular stopping it completely
+	
+]]
+function Schedular.stopSchedular() : ()
+	if Schedular.__stepConnection and Schedular.__stepConnection.Connected then
+		Schedular.__stepConnection:Disconnect()
+	end
+end
+
+Tome.Schedular = Schedular
 
 --[[
 	
@@ -435,86 +639,67 @@ local scheduledObjectEntries: {ScheduledObjectEntry} = {}
 function Tome.schedule<object>(object: object, lifeTime: number) : object
 	assert(type(lifeTime) == "number", "Expected argument #2 lifeTime to be a number type")
 	
-	local destroyMethod: DestroyMethod = getDestroyMethodForObject(object)
+	local currentTime: number = os.clock()
+	local expirationTime: number = currentTime + lifeTime
 	
-	table.insert(scheduledObjectEntries, {
+	local existingObjectIndex: number = objectToIndexMap[object]
+	
+	if not Schedular.isSchedularRunning() then
+		Schedular.startSchedular()
+	end
+	
+	if existingObjectIndex then
+		local scheduledObjectEntry: ScheduledObjectEntry = scheduledObjectEntries[existingObjectIndex]
+		
+		scheduledObjectEntry.ExpiresAt = expirationTime
+		
+		bubbleUpSchedule(existingObjectIndex, scheduledObjectEntries, objectToIndexMap)
+		bubbleDownSchedule(existingObjectIndex, scheduledObjectEntries, objectToIndexMap)
+		
+		return object
+	end
+	
+	local destroyMethod: DestroyMethod = getDestroyMethodForObject(object)
+	local scheduledEntry: ScheduledObjectEntry = {
 		Object = object,
 		DestroyMethod = destroyMethod,
-		ExpireTime = os.clock() + lifeTime,
-	})
+		ExpiresAt = os.clock() + lifeTime,
+	}
 	
-	local heapSize: number = #scheduledObjectEntries
+	local insertionIndex: number = #scheduledObjectEntries + 1
 	
-	while heapSize > 1 do
-		local parentIndex: number = math.floor(heapSize * 0.5)
-		if scheduledObjectEntries[parentIndex].ExpireTime <= scheduledObjectEntries[heapSize].ExpireTime then
-			break
-		end
-		
-		scheduledObjectEntries[parentIndex], scheduledObjectEntries[heapSize] = scheduledObjectEntries[heapSize], scheduledObjectEntries[parentIndex]
-		heapSize = parentIndex
-	end
+	table.insert(scheduledObjectEntries, insertionIndex, scheduledEntry)
+	
+	objectToIndexMap[object] = insertionIndex
+	
+	bubbleUpSchedule(insertionIndex, scheduledObjectEntries, objectToIndexMap)
 	
 	return object
 end
 
---[[
-	
-	@param heap {ScheduledObjectEntry}
-	@return ScheduledObjectEntry?
-	
-	Removes the earliest scheduled entry and reshifts the heap ot fix broken indexes.
-	
-]]
-local function popScheduledObjectEntry(heap: {ScheduledObjectEntry}) : ScheduledObjectEntry
-	local heapSize: number = #heap
-	
-	local rootEntry: ScheduledObjectEntry = heap[1]
-	heap[1] = heap[heapSize]
-	heap[heapSize] = nil
-	
-	heapSize -= 1
-	
-	local index: number = 1
-	
-	while true do
-		local smallestIndex: number = index
-		
-		local leftIndex: number = index * 2
-		local rightIndex: number = leftIndex + 1
-		
-		if leftIndex <= heapSize and heap[leftIndex].ExpireTime < heap[smallestIndex].ExpireTime then
-			smallestIndex = leftIndex
-		end
-		
-		if rightIndex <= heapSize and heap[rightIndex].ExpireTime < heap[smallestIndex].ExpireTime then
-			smallestIndex = rightIndex
-		end
-		
-		if smallestIndex == index then
-			break
-		end
-		
-		heap[index], heap[smallestIndex] = heap[smallestIndex], heap[index]
-		index = smallestIndex
+function Tome.unschedule<object>(object: object) : object
+	local existingObjectIndex: number? = objectToIndexMap[object]
+	if not existingObjectIndex then
+		return object
 	end
 	
-	return rootEntry
-end
-
-local function stepSchedular(deltaTime: number) : ()
-	local currentTime: number = os.clock()
+	local hashSize: number = #scheduledObjectEntries
 	
-	while
-		scheduledObjectEntries[1] and scheduledObjectEntries[1].ExpireTime <= currentTime
-	do
-		local entry: ScheduledObjectEntry = popScheduledObjectEntry(scheduledObjectEntries)
-		
-		destroyObject(entry.Object, entry.DestroyMethod)
+	scheduledObjectEntries[existingObjectIndex], scheduledObjectEntries[hashSize]
+		= scheduledObjectEntries[hashSize], scheduledObjectEntries[existingObjectIndex]
+	
+	objectToIndexMap[scheduledObjectEntries[existingObjectIndex].Object] = existingObjectIndex
+	
+	scheduledObjectEntries[hashSize] = nil
+	objectToIndexMap[object] = nil
+	
+	if existingObjectIndex <= #scheduledObjectEntries then
+		bubbleUpSchedule(existingObjectIndex, scheduledObjectEntries, objectToIndexMap)
+		bubbleDownSchedule(existingObjectIndex, scheduledObjectEntries, objectToIndexMap)
 	end
+	
+	return object
 end
-
-RunService.Heartbeat:Connect(stepSchedular)
 
 --[[
 	

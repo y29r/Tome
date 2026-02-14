@@ -31,7 +31,7 @@ export type RunServiceSignalName = "RenderStepped"
 export type ScheduledObjectEntry = {
 	Object: any,
 	DestroyMethod: DestroyMethod,
-	ExpireTime: number,
+	ExpiresAt: number,
 }
 
 export type TweenMetadata = {
@@ -79,6 +79,7 @@ export type Tome = {
 	
 	Is: (object: any) -> boolean,
 	schedule: <object>(object: object, lifeTime: number) -> object,
+	unschedule: <object>(object: object) -> object,
 	
 	SetTag: (self: Tome, tag: string) -> Tome,
 	GetTag: (self: Tome) -> string?,
