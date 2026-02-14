@@ -59,6 +59,7 @@ An object-oriented garbage collection module for luau
 	- `Tome:Table` : Adds a table inside the Tome and uses `table.clear` as the destroy method.
 	- `Tome:OnDestroy` : Attaches a callback that listens for when the Tome destroys. This callback does **NOT** get cleaned up by default, however you can provide this with the params as well as manually cleaning it up. 
 - `Tome.Is` : Returns whether the provided object is a Tome object or not.
+- `Tome.schedule` : Schedules an object to be removed after the provided life time. See [Tome vs Debris](https://github.com/y29r/Tome/blob/main/README.md#tagging) for more information.
 
 Every method has an example of use case above it: [Tome-main](https://github.com/y29r/Tome/blob/main/Tome.luau)
 
@@ -150,7 +151,7 @@ scopeTome:Add(workspace.Part, function(part: BasePart)
 end)
 ```
 
-## Tome vs. Debris
+## Tome vs Debris
 Debris is a Roblox-provided service that helps clean up `Instance`s over time. However [Debris](https://create.roblox.com/docs/reference/engine/classes/Debris) hasn't been updated in many years, and many view it as an outdated service (aka deprecated) But many also view it as a great way to clean up unused objects. Sadly, staff have [already mentioned](https://devforum.roblox.com/t/debris-maxitems-still-in-effect-despite-being-deprecated/2612863/3) that it may likely be officially deprecated.
 
 So what's the solution? Tome offers a very similar implementation with `Tome.schedule`. And it works nearly identical to Debris, while being more performant too.
