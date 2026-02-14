@@ -147,6 +147,7 @@
 	Before invoking a method, read the summary of it - located above every method respectively.
 	
 	Tome.new : Instantiates a new Tome.
+	Tome.Is : Checks whether the provided object is a Tome.
 	
 	Tome:Add : Adds an object to the Tome.
 	Tome:AddTuple : Adds multiple objects to the Tome.
