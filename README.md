@@ -150,4 +150,9 @@ scopeTome:Add(workspace.Part, function(part: BasePart)
 end)
 ```
 
+## Tome vs. Debris
+Debris is a Roblox-provided service that helps clean up `Instance`s over time. However [Debris](https://create.roblox.com/docs/reference/engine/classes/Debris) hasn't been updated in many years, and many view it as an outdated service (aka deprecated) But many also view it as a great way to clean up unused objects. Sadly, staff have [already mentioned](https://devforum.roblox.com/t/debris-maxitems-still-in-effect-despite-being-deprecated/2612863/3) that it may likely be officially deprecated.
+
+So what's the solution? Tome offers a very similar implementation with `Tome.schedule`. And it works nearly identical to Debris, while being more performant too.
+
 Though at the end of the day, what matters is that the garbage gets cleaned up.
