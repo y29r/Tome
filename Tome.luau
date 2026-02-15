@@ -580,6 +580,17 @@ function Schedular.isScheduleEmpty() : boolean
 	return #scheduledObjectEntries == 0
 end
 
+local function newSpawner() : ()
+	while true do
+		local callback: () -> () = coroutine.yield()
+		
+		callback()
+	end
+end
+
+local spawner: thread = coroutine.create(newSpawner)
+coroutine.resume(spawner)
+
 --[[
 	
 	@param runServiceSignalName RunServiceSignalName?
@@ -593,8 +604,10 @@ end
 function Schedular.startSchedular(runServiceSignalName: RunServiceSignalName?) : ()
 	Schedular.stopSchedular()
 	
-	Schedular.__stepConnection = (RunService :: any)
-		[runServiceSignalName or Schedular.DefaultSchedularSignalName]:Connect(Schedular.stepSchedular)
+	coroutine.resume(spawner, function()
+		Schedular.__stepConnection = (RunService :: any)
+			[runServiceSignalName or Schedular.DefaultSchedularSignalName]:Connect(Schedular.stepSchedular)
+	end)
 end
 
 --[[
