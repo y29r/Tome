@@ -659,6 +659,10 @@ function Tome.schedule<object>(object: object, lifeTime: number, destroyMethod: 
 		
 		scheduledObjectEntry.ExpiresAt = expirationTime
 		
+		if destroyMethod then
+			scheduledObjectEntry.DestroyMethod = destroyMethod
+		end
+		
 		bubbleUpSchedule(existingObjectIndex, scheduledObjectEntries, objectToIndexMap)
 		bubbleDownSchedule(existingObjectIndex, scheduledObjectEntries, objectToIndexMap)
 		
