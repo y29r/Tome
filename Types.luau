@@ -78,7 +78,7 @@ export type Tome = {
 	new: (metaprops: Metaprops?) -> Tome,
 	
 	Is: (object: any) -> boolean,
-	schedule: <object>(object: object, lifeTime: number) -> object,
+	schedule: <object>(object: object, lifeTime: number, destroyMethod: DestroyMethod?) -> object,
 	unschedule: <object>(object: object) -> object,
 	
 	SetTag: (self: Tome, tag: string) -> Tome,

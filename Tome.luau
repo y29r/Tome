@@ -642,7 +642,7 @@ Tome.Schedular = Schedular
 	```
 	
 ]]
-function Tome.schedule<object>(object: object, lifeTime: number) : object
+function Tome.schedule<object>(object: object, lifeTime: number, destroyMethod: DestroyMethod?) : object
 	assert(type(lifeTime) == "number", "Expected argument #2 lifeTime to be a number type")
 	
 	local currentTime: number = os.clock()
@@ -665,10 +665,9 @@ function Tome.schedule<object>(object: object, lifeTime: number) : object
 		return object
 	end
 	
-	local destroyMethod: DestroyMethod = getDestroyMethodForObject(object)
 	local scheduledEntry: ScheduledObjectEntry = {
 		Object = object,
-		DestroyMethod = destroyMethod,
+		DestroyMethod = destroyMethod or getDestroyMethodForObject(object),
 		ExpiresAt = os.clock() + lifeTime,
 	}
 	
