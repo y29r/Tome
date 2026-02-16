@@ -5,7 +5,8 @@ An object-oriented garbage collection module for luau
 - `Tome.new` : Instantiates a new Tome with provides these methods:
 	- `Tome:Add` : Adds an object to the Tome.
 	- `Tome:AddTuple` : Adds tuple objects to the Tome.
-	- `Tome:AddFromArray` : Adds objects from an array to the Tome.
+	- `Tome:AddFromArray` : Adds objects from an array, into the Tome.
+ 	- `Tome:AddFromDictionary` : Adds objects from a dictionary, into the Tome. The keys are expected to be objects and the values are expected to be destroy methods. If the destroy method is unknown, use `Tome.Guess` as the value.
 	- `Tome:AddPromise` : Adds a standard Promise to the Tome.
 	- `Tome:AddPage` : Constructs a Page (alias for Tome) and adds it to the Tome.
 	- `Tome:Attach` : Attaches the Tome to an object. When the object is destroyed, the Tome will destroy too.
