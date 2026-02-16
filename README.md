@@ -53,7 +53,7 @@ An object-oriented garbage collection module for luau
 	- `Tome:Rename` : Renames the Tome.
 	- `Tome:RipPage` : Destroys the provided page and removes it from the Tome.
 	- `Tome:RipPages` : Destroys and removes all the Pages within a Tome.
-	- `Tome:SetTag` : Overrides the default Tome tag used for [Tagging](https://github.com/y29r/Tome/blob/main/README.md#tagging).
+	- `Tome:SetTag` : Overrides the default Tome tag used for [Tagging](https://github.com/y29r/Tome?tab=readme-ov-file.md#tagging).
 	- `Tome:Signal` : Constructs a standard Signal and adds it to the Tome and returns it.
 	- `Tome:UnbindRenderStepped` : Unbinds a binding made with `Tome:BindRenderStepped`.
 	- `Tome:Tween` : Creates a Tween and adds it to the Tome. (Includes extra features mentioned within [Tome-main](https://github.com/y29r/Tome/blob/main/Tome.luau))
@@ -96,7 +96,7 @@ Metaprops are a way to tell Tome how to go about dealing with objects as a whole
     Though Tome optimizes it into a `task.spawn` call directly :)
     This is useful for when you want object destroy methods to not yield the main destroy thread which can cause serious issues if not used well.
   - `Warnings` : Whether warnings that aren't serious should be outputed.
-  - `Tagging` : Whether Tome uses [Tagging](https://github.com/y29r/Tome/blob/main/README.md#tagging)
+  - `Tagging` : Whether Tome uses [Tagging](https://github.com/y29r/Tome?tab=readme-ov-file.md#tagging)
   - `UseParentMetaprops` : Whether any Pages should inherit the same metaprops as the parent.
 
 ## Tagging
