@@ -60,7 +60,7 @@ An object-oriented garbage collection module for luau
 	- `Tome:Table` : Adds a table inside the Tome and uses `table.clear` as the destroy method.
 	- `Tome:OnDestroy` : Attaches a callback that listens for when the Tome destroys. This callback does **NOT** get cleaned up by default, however you can provide this with the params as well as manually cleaning it up. 
 - `Tome.Is` : Returns whether the provided object is a Tome object or not.
-- `Tome.schedule` : Schedules an object to be removed after the provided life time. See [Tome vs Debris](https://github.com/y29r/Tome/blob/main/README.md#tome-vs-debris) for more information.
+- `Tome.schedule` : Schedules an object to be removed after the provided life time. See [Tome vs Debris](https://github.com/y29r/Tome/main/README.md#tome-vs-debris) for more information.
 - `Tome.unschedule` : Unschedules an object to be removed from the Schedular. Stopping the object from destroying after the provided life time. See [Tome vs Debris](https://github.com/y29r/Tome/blob/main/README.md#tome-vs-debris) for more information.
 
 Every method has an example of use case above it: [Tome-main](https://github.com/y29r/Tome/blob/main/Tome.luau)
