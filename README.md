@@ -160,5 +160,12 @@ So what's the solution? Tome offers a very similar implementation with `Tome.sch
 
 ## Schedular
 The schedular is what Tome uses to dispose of scheduled objects over time. Tome exposes it publicly via `Tome.Schedular`:
+- `Schedular.stepSchedular` : Steps the schedular checking (and removing) objects that are expired.
+- `Schedular.isSchedularRunning` : Returns whether the schedular is currently running.
+- `Schedular.isScheduleEmpty` : Returns whether the schedular is empty (aka has no hash entries)
+- `Schedular.startSchedular` : Starts the schedular (stops the previous if already running) Optionally passing in a RunService signal name for the step type.
+- `Schedular.stopSchedular` : Stops the schedular entirely.
 
-Though at the end of the day, what matters is that the garbage gets cleaned up.
+- `Schedular.DefaultSchedularSignalName` : A string key that can be set to tell the schedular what RunService signal to use when using stepping the schedular.
+
+Any scheduled objects wiil remain in the schedular regardless if the main thread dies or if the script scheduling the object gets destroyed. This is to mimic how Debris works, however this may be changed, or a flag may be added to disable this.
