@@ -256,6 +256,7 @@ export type DestroyMethod = Types.DestroyMethod
 export type RunServiceSignalName = Types.RunServiceSignalName
 export type OnDestroyParams = Types.OnDestroyParams
 export type OnDestroyCallbackData = Types.OnDestroyCallbackData
+export type ObjectDictionary = Types.ObjectDictionary
 
 export type Attachment = Types.Attachment
 export type ScheduledObjectEntry = Types.ScheduledObjectEntry
@@ -268,6 +269,7 @@ local CollectionService: CollectionService = game:GetService("CollectionService"
 local Static = require("./Static")
 
 local TweenType = require("./TweenType")
+local GuessType = require("./GuessType")
 local ThreadType = require("./ThreadType")
 local FunctionType = require("./FunctionType")
 
@@ -293,6 +295,8 @@ Tome.__type = "Tome"
 Tome.TweenType = TweenType
 Tome.ThreadType = ThreadType
 Tome.FunctionType = FunctionType
+
+Tome.Guess = GuessType
 
 Tome.VERSION = require("./VERSION")
 
@@ -1315,6 +1319,56 @@ end
 
 --[[
 	
+	@param object any
+	@param tome Tome
+	@return void
+	
+	Validates the given object and sanitizes it against the given Tome.
+	This it not used as a method in Tome to improve performance as indexing is
+	signficantly slower with metatables (especially double-indexing)
+	
+	TODO: Expose this function as a "validity" function to check if an object
+	is able to be added into the Tome.
+	
+]]
+local function validateObject(object: any, tome: Tome) : ()
+	local objectType: string = realTypeOf(object)
+	local objectIsTome: boolean = objectType == "Tome"
+	if objectIsTome then
+		if object == tome then
+			throwError("Attempted to add current Tome (self) to the current Tome (self) Upon calling :Destroy, indefinite recursion will occur", "Ensure that the Tome isn't added into itself.")
+		end
+		
+		local lastParent: Tome? = tome:__getLastParentTome()
+		if lastParent == object then
+			throwError("Attempted to add a Tome which is an ancestor Tome of the current Tome (self)", "Ensure no ancestor Tomes are added to the Tome.")
+		end
+	end
+	
+	-- not reusing 'objectType' for strict type compliancy
+	if typeof(object) == "Instance" and not object:IsA("Tween") and tome.__tagging then
+		if not object:IsDescendantOf(game) then
+			throwError([[
+				Attempted to add an already destroyed object to the Tome. If you are adding an Instance that hasn't been parented yet
+				This error will persist. Consider turning off Tagging via Tome.new({ Tagging = false }) or setting it to false globally:
+				Tome.luau -> Static.luau -> Tagging = false,
+			]])
+		end
+		
+		-- tomeTag will only have a string if tagging was enabled during instantiation
+		-- if somewhere down the line metaprops can be updated after instantiation
+		-- this code will need to be updated to comply
+		local tomeTag: string? = tome:GetTag()
+		if tomeTag then
+			object:AddTag(tomeTag)
+		end
+		
+		tome:__connectTagRemoved()
+	end
+end
+
+--[[
+	
 	@within Tome
 	@param object<any>
 	@param destroyMethod DestroyMethod
@@ -1389,44 +1443,62 @@ function Tome:Add<object>(object: object, destroyMethod: Types.DestroyMethod?) :
 	end
 	
 	if not self.__fastAdd then
-		local objectType: string = realTypeOf(object)
-		local objectIsTome: boolean = objectType == "Tome"
-		if objectIsTome then
-			if object == self then
-				throwError("Attempted to add current Tome to the current Tome. Upon calling :Destroy, infinite recursion will occur", "Ensure that the Tome isn't added to itself.")
-			end
-			
-			local lastParent: Tome? = self:__getLastParentTome()
-			if lastParent == object then
-				throwError("[Recursive]: Attempted to add a Tome which is an ancestor Tome of the current Tome.", "Ensure no ancestor Tomes are added to the Tome.")
-			end
-		end
-		
-		-- not reusing 'objectType' for strict type compliancy
-		if typeof(object) == "Instance" and not object:IsA("Tween") and self.__tagging then
-			if not object:IsDescendantOf(game) then
-				throwError([[
-					Attempted to add an already destroyed object to the Tome. If you are adding an Instance that hasn't been parented yet
-					This error will persist. Consider turning off Tagging via Tome.new({ Tagging = false }) or setting it to false globally:
-					Tome.luau -> Static.luau -> Tagging = false,
-				]])
-			end
-			
-			-- tomeTag will only have a string if tagging was enabled during instantiation
-			-- if somewhere down the line metaprops can be updated after instantiation
-			-- this code will need to be updated to comply
-			local tomeTag: string? = self:GetTag()
-			if tomeTag then
-				object:AddTag(tomeTag)
-			end
-			
-			self:__connectTagRemoved()
-		end
+		validateObject(object, self)
 	end
 	
 	self.__objects[object] = destroyMethod or getDestroyMethodForObject(object)
 	
 	return object
+end
+
+--[[
+	
+	@within Tome
+	@param dictionary<ObjectDictionary>
+	@return dictionary<ObjectDictionary>
+	
+	Adds objects into the Tome from a provided dictionary.
+	Where the key(s) will be the object(s) and the value(s) will be the destroy method
+	If you don't know the destroy method and want Tome to detect it automatically
+	Use `Tome.Guess` for the value.
+	
+	Example(s):
+	```luau
+	local newTome: Tome.Tome = Tome.new()
+	
+	newTome:AddFromDictionary({
+		[workspace.Part] = Tome.Guess,
+		[workspace.Part2] = "Destroy",
+	})
+	
+	newTome:DelayDestroy(2.0)
+	```
+	
+]]
+function Tome:AddFromDictionary(dictionary: ObjectDictionary) : ObjectDictionary
+	if self:IsDestroying() then
+		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add dictionary of objects"))
+	end
+	
+	assert(type(dictionary) == "table", "Expected argument #1 dictionary to be a table type")
+	
+	local FAST_ADD: boolean = self.__fastAdd
+	
+	if FAST_ADD then
+		for object: any, destroyMethod: DestroyMethod | {name: string} in dictionary do
+			validateObject(object, self)
+			
+			self.__objects[object] = destroyMethod == GuessType
+				and getDestroyMethodForObject(object) or destroyMethod
+		end
+	else
+		for object: any, destroyMethod: DestroyMethod | {name: string} in dictionary do
+			self.__objects[object] = destroyMethod == GuessType
+				and getDestroyMethodForObject(object) or destroyMethod
+		end
+	end
+	
+	return dictionary
 end
 
 --[[
@@ -1529,8 +1601,18 @@ function Tome:AddTuple<object...>(...) : object...
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add tuple objects to the Tome"))
 	end
 	
-	for index: number, object: any in {...} do
-		self:Add(object)
+	local FAST_ADD: boolean = self.__fastAdd
+	
+	if FAST_ADD then
+		for index: number, object: any in {...} do
+			validateObject(object, self)
+			
+			self.__objects[object] = getDestroyMethodForObject(object)
+		end
+	else
+		for index: number, object: any in {...} do
+			self.__objects[object] = getDestroyMethodForObject(object)
+		end
 	end
 	
 	return ...
@@ -1562,16 +1644,24 @@ end
 	
 ]]
 function Tome:AddFromArray<objectsArray>(objectsArray: objectsArray) : objectsArray
-	assert(type(objectsArray) == "table", "Tome:AddFromArray objectsArray argument must be a table type (in array format).")
+	assert(type(objectsArray) == "table", "Expected argument #1 objectsArray to be a table type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add objects from array"))
 	end
 	
-	-- unpacking the array into an actual array so the type solver doesn't complain
-	-- bit of a waste of resources but hopefully this will be solved in the newer versions
-	for index: number, object: any in {unpack(objectsArray)} do
-		self:Add(object)
+	local FAST_ADD: boolean = self.__fastAdd
+	
+	if FAST_ADD then
+		for index: number, object: any in objectsArray do
+			validateObject(object, self)
+			
+			self.__objects[object] = getDestroyMethodForObject(object)
+		end
+	else
+		for index: number, object: any in objectsArray do
+			self.__objects[object] = getDestroyMethodForObject(object)
+		end
 	end
 	
 	return objectsArray

@@ -58,6 +58,8 @@ export type Metaprops = {
 	UseParentMetaprops: boolean?,
 }
 
+export type ObjectDictionary = {[any]: DestroyMethod | {name: string}}
+
 export type Tome = {
 	__fastAdd: boolean,
 	__spawnDestroy: boolean,
@@ -91,6 +93,7 @@ export type Tome = {
 	FastAdd: <object>(self: Tome, object: object, destroyMethod: DestroyMethod?) -> object,
 	AddTuple: <object...>(self: Tome, object...) -> object...,
 	AddFromArray: <objectsArray>(self: Tome, objectsArray: objectsArray) -> objectsArray,
+	AddFromDictionary: (self: Tome, dictionary: ObjectDictionary) -> ObjectDictionary,
 	AddPromise: (self: Tome, promise: Promise) -> any,
 	
 	Construct: (self: Tome, class: any, ...any) -> any,
