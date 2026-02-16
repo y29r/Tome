@@ -158,4 +158,7 @@ Debris is a Roblox-provided service that helps clean up `Instance`s over time. H
 
 So what's the solution? Tome offers a very similar implementation with `Tome.schedule`. And it works nearly identical to Debris, while being more performant too.
 
+## Schedular
+The schedular is what Tome uses to dispose of scheduled objects over time. Tome exposes it publicly via `Tome.Schedular`:
+
 Though at the end of the day, what matters is that the garbage gets cleaned up.
