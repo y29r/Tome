@@ -410,8 +410,6 @@ function Tome.Is(object: any) : boolean
 	return usesTomeMethods
 end
 
-
-
 --[[
 	
 	@param index number
@@ -474,9 +472,10 @@ local function bubbleDownSchedule(
 	local hashSize: number = #hash
 
 	while true do
+		local smallestIndex: number = index
+		
 		local leftIndex: number = index * 2
 		local rightIndex: number = leftIndex + 1
-		local smallestIndex: number = index
 		
 		if leftIndex <= hashSize and hash[leftIndex].ExpiresAt < hash[smallestIndex].ExpiresAt then
 			smallestIndex = leftIndex
@@ -662,15 +661,22 @@ Tome.Schedular = Schedular
 function Tome.schedule<object>(object: object, lifeTime: number, destroyMethod: DestroyMethod?) : object
 	assert(type(lifeTime) == "number", "Expected argument #2 lifeTime to be a number type")
 	
-	local currentTime: number = os.clock()
-	local expirationTime: number = currentTime + lifeTime
-	
-	local existingObjectIndex: number = objectToIndexMap[object]
-	
 	if not Schedular.isSchedularRunning() then
 		Schedular.startSchedular()
 	end
 	
+	if type(object) == "table" and object.__TOME_OBJECT_GROUP__ then
+		for index: number, tupleObject: any in object.Tuple do
+			Tome.schedule(tupleObject, lifeTime)
+		end
+		
+		return object
+	end
+	
+	local currentTime: number = os.clock()
+	local expirationTime: number = currentTime + lifeTime
+	
+	local existingObjectIndex: number = objectToIndexMap[object]
 	if existingObjectIndex then
 		local scheduledObjectEntry: ScheduledObjectEntry = scheduledObjectEntries[existingObjectIndex]
 		
@@ -689,7 +695,7 @@ function Tome.schedule<object>(object: object, lifeTime: number, destroyMethod: 
 	local scheduledEntry: ScheduledObjectEntry = {
 		Object = object,
 		DestroyMethod = destroyMethod or getDestroyMethodForObject(object),
-		ExpiresAt = os.clock() + lifeTime,
+		ExpiresAt = expirationTime,
 	}
 	
 	local insertionIndex: number = #scheduledObjectEntries + 1
@@ -703,7 +709,40 @@ function Tome.schedule<object>(object: object, lifeTime: number, destroyMethod: 
 	return object
 end
 
+--[[
+	
+	@param ... T
+	@return {...T}
+	
+	Groups a given tuple of objects into a table, attaching a unique key to use
+	across Tome.
+	
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	
+	local group: {any} = Tome.group(workspace.Part, workspace.Part2)
+	
+	Tome.schedule(group, 2.0)
+	```
+	
+]]
+function Tome.group<T>(...: T) : {__TOME_OBJECT_GROUP__: boolean, Tuple: {T}}
+	return {
+		__TOME_OBJECT_GROUP__ = true,
+		Tuple = {...},
+	}
+end
+
 function Tome.unschedule<object>(object: object) : object
+	if type(object) == "table" and object.__TOME_OBJECT_GROUP__ then
+		for index: number, tupleObject: any in object.Tuple do
+			Tome.unschedule(tupleObject)
+		end
+		
+		return object
+	end
+	
 	local existingObjectIndex: number? = objectToIndexMap[object]
 	if not existingObjectIndex then
 		return object
@@ -3474,7 +3513,7 @@ end
 	Wraps the Tome:Destroy method into a function that is then returned. Calling the function
 	will destroy the Tome.
 
-	Useful in cases where you might have a higher scoped
+	Useful in cases where you need a *cleaner* function within another library or system.
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
