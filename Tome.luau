@@ -2044,7 +2044,7 @@ function Tome:Connect(signal: any, listener: (...any) -> ...any) : any
 		return self:FastAdd(signal:Connect(listener), "Disconnect" :: DestroyMethod?)
 	end
 	
-	return self:FastAdd(signal:Connect(listener))
+	return self:FastAdd(signal:Connect(listener), nil)
 end
 
 --[[
