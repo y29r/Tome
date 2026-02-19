@@ -734,6 +734,28 @@ function Tome.group<T>(...: T) : {__TOME_OBJECT_GROUP__: boolean, Tuple: {T}}
 	}
 end
 
+--[[
+	
+	@param object<object>
+	@return <object>
+	
+	Unschedules the provided object if it exists within the schedular.
+	Removing the object doesn't clean up the object.
+	
+	If a group from `Tome.group` is provided all the objects within the group
+	will be unscheduled.
+	
+	```luau
+	local Tome = require("../Path/To/Tome")
+	
+	-- add all the parts to the schedular
+	Tome.schedule(Tome.group(workspace.Part, workspace.Part2, workspace.Part3), 2)
+	
+	-- now remove a couple of parts and be left with one
+	Tome.unschedule(Tome.group(workspace.Part, workspace.Part2))
+	```
+	
+]]
 function Tome.unschedule<object>(object: object) : object
 	if type(object) == "table" and object.__TOME_OBJECT_GROUP__ then
 		for index: number, tupleObject: any in object.Tuple do
