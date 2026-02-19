@@ -851,21 +851,21 @@ function Tome:__connectTagRemoved() : ()
 		return
 	end
 	
-	local tomeTag: string? = self:GetTag()
-	if not tomeTag then
+	local tag: string? = self:GetTag()
+	if not tag then
 		return
 	end
 	
 	local function instanceRemoved(instance: Instance) : ()
 		self.__objects[instance] = nil
 		
-		local objectExists: {Instance} = CollectionService:GetTagged(tomeTag)
+		local objectExists: {Instance} = CollectionService:GetTagged(tag)
 		if #objectExists == 0 then
 			self:__disconnectTagRemovedConnection()
 		end
 	end
 	
-	self.__tagRemovedConnection = CollectionService:GetInstanceRemovedSignal(tomeTag):Connect(instanceRemoved)
+	self.__tagRemovedConnection = CollectionService:GetInstanceRemovedSignal(tag):Connect(instanceRemoved)
 end
 
 --[[
