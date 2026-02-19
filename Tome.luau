@@ -193,7 +193,7 @@
 	Tome:GetObjectsWithTag : Returns all the objects contained within the Tome that contain a provided tag.
 	TOme:GetObjectsOfType : Returns all the objects of a specified type name.
 	Tome:GetPage : Returns a Page from the Tome given a name.
-	Tome:GetParentTome : Gets the parent Tome (if it has one)
+	Tome:GetParent : Gets the parent Tome (if it has one)
 	Tome:GetTag : Returns the internal tag the Tome uses to automatically remove destroyed instances.
 	Tome:GivePage : Moves a Page to another Tome or Page.
 	Tome:HookRunServceSignal : Connects to any of the RunService signals given a name
@@ -358,7 +358,7 @@ function Tome.new(metaprops: Types.Metaprops?) : Tome
 		__objects = {},
 		__destroying = false,
 		__name = nil,
-		__parentTome = nil,
+		__parent = nil,
 		__useParentMetaprops = if type(USE_PARENT_METAPROPS) == "boolean" then USE_PARENT_METAPROPS else DEFAULT_USE_PARENT_METAPROPS,
 		__tomeTag = (TAGGING and HttpService:GenerateGUID(false)) or nil,
 		__tagRemovedConnection = nil,
@@ -996,7 +996,7 @@ function Tome:AddPage(name: string?, metaprops: Types.Metaprops?) : Tome
 	
 	local newPage: Tome = Tome.new(newMetaprops)
 	newPage:Rename(name)
-	newPage.__parentTome = self :: Tome
+	newPage.__parent = self :: Tome
 	
 	self.__pages[name] = newPage
 	
@@ -1053,13 +1053,13 @@ end
 	
 	local somePage = scopeTome:AddPage()
 	
-	print(scopeTome:GetParentTome()) -> ()
-	print(somePage:GetParentTome()) -> scopeTome
+	print(scopeTome:GetParent()) -> ()
+	print(somePage:GetParent()) -> scopeTome
 	```
 	
 ]]
-function Tome:GetParentTome() : Tome?
-	return self.__parentTome
+function Tome:GetParent() : Tome?
+	return self.__parent
 end
 
 --[[
@@ -1072,17 +1072,17 @@ end
 	This is an internal method that shouldn't be used outside this prototype.
 	
 ]]
-function Tome:__getLastParentTome() : Tome?
-	local parentTome: Tome? = self:GetParentTome()
-	if parentTome then
+function Tome:__getLastParent() : Tome?
+	local parent: Tome? = self:GetParent()
+	if parent then
 		local lastParent: Tome? = nil
 		
-		while parentTome ~= nil do
-			lastParent = parentTome
-			parentTome = parentTome.__parentTome
+		while parent ~= nil do
+			lastParent = parent
+			parent = parent.__parent
 		end
 		
-		return lastParent or parentTome
+		return lastParent or parent
 	end
 	
 	return
@@ -1270,17 +1270,17 @@ function Tome:Parent(newTome: Tome?) : Tome
 		throwError("Cannot add the current Tome to the newTome because the new Tome is in the middle of being destroyed.", "Ensure the new Tome is not destroying with Tome:IsDestroying.")
 	end
 	
-	local parentTome: Tome? = self.__parentTome
-	if parentTome then
-		self.__parentTome = nil
+	local parent: Tome? = self.__parent
+	if parent then
+		self.__parent = nil
 		
-		parentTome.__pages[self.__name] = nil
+		parent.__pages[self.__name] = nil
 	end
 	
 	if newTome then
 		newTome.__pages[self.__name] = self
 		
-		self.__parentTome = newTome
+		self.__parent = newTome
 	end
 	
 	return self
@@ -1400,7 +1400,7 @@ local function validateObject(object: any, tome: Tome) : ()
 			throwError("Attempted to add current Tome (self) to the current Tome (self) Upon calling :Destroy, indefinite recursion will occur", "Ensure that the Tome isn't added into itself.")
 		end
 		
-		local lastParent: Tome? = tome:__getLastParentTome()
+		local lastParent: Tome? = tome:__getLastParent()
 		if lastParent == object then
 			throwError("Attempted to add a Tome which is an ancestor Tome of the current Tome (self)", "Ensure no ancestor Tomes are added to the Tome.")
 		end

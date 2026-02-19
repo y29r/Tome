@@ -71,7 +71,7 @@ export type Tome = {
 	
 	__destroying: boolean,
 	__name: string?,
-	__parentTome: Tome?,
+	__parent: Tome?,
 	__tomeTag: string?,
 	__useParentMetaprops: boolean,
 	__tagRemovedConnection: RBXScriptConnection?,
@@ -149,7 +149,7 @@ export type Tome = {
 	GivePage: (self: Tome, page: Tome, newTome: Tome) -> Tome,
 	Move: <object>(self: Tome, object: object, otherTome: Tome) -> object,
 	
-	GetParentTome: (self: Tome) -> Tome?,
+	GetParent: (self: Tome) -> Tome?,
 	GetObjects: (self: Tome) -> {[any]: any},
 	GetObjectsOfType: (self: Tome, typeName: string) -> {any},
 	GetObjectsWithTag: (self: Tome, tag: string) -> {any},
@@ -174,7 +174,7 @@ export type Tome = {
 	__disconnectTagRemovedConnection: (self: Tome) -> (),
 	
 	__findPage: (self: Tome, pageToFind: Tome) -> (Tome?, Tome?),
-	__getLastParentTome: (self: Tome) -> Tome?,
+	__getLastParent: (self: Tome) -> Tome?,
 	__remove: <object>(self: Tome, object: object) -> object,
 }
 
