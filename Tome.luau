@@ -2041,10 +2041,10 @@ function Tome:Connect(signal: any, listener: (...any) -> ...any) : any
 	
 	local realType: string = typeof(signal)
 	if realType == "RBXScriptSignal" then
-		return self:Add(signal:Connect(listener))
+		return self:FastAdd(signal:Connect(listener), "Disconnect" :: DestroyMethod?)
 	end
 	
-	return self:Add(signal:Connect(listener))
+	return self:FastAdd(signal:Connect(listener))
 end
 
 --[[
@@ -2082,7 +2082,12 @@ function Tome:Once(signal: RBXScriptSignal, listener: (...any) -> (...any)) : an
 		throwError(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "connect once to a signal"))
 	end
 	
-	return self:Add(signal:Once(listener))
+	local realType: string = typeof(signal)
+	if realType == "RBXScriptSignal" then
+		return self:FastAdd(signal:Once(listener), "Disconnect" :: DestroyMethod?)
+	end
+	
+	return self:FastAdd(signal:Once(listener), nil)
 end
 
 --[[
