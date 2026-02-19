@@ -2259,19 +2259,19 @@ function Tome:Clone(object: any, extendFunctionName: string?) : any
 	if objectType == "table" then
 		local extensionFunction: ((object: any) -> ())? = extendFunctionName and object[extendFunctionName]
 		if extensionFunction then
-			return self:Add(extensionFunction(object))
+			return self:FastAdd(extensionFunction(object), nil :: DestroyMethod?)
 		end
 		
-		for _: number, extensionName: string in EXTENSION_METHOD_NAMES do
+		for index: number, extensionName: string in EXTENSION_METHOD_NAMES do
 			local extension: ((object: any) -> ())? = object[extensionName]
 			if extension then
-				return self:Add(extension(object))
+				return self:FastAdd(extension(object), nil)
 			end
 		end
 		
 		return throwError("Attempted to clone a table (most likely a class) however the table doesn't contain an extension/clone method.", "Ensure the provided class has en extension method. If it does, add it to the extension list at the top of the module.")
 	elseif objectType == "Instance" then
-		return self:Add(object:Clone())
+		return self:Add(object:Clone(), "Destroy")
 	end
 	
 	error(string.format("Failed to clone object: %s", tostring(object)))
