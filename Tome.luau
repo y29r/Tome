@@ -2277,88 +2277,94 @@ function Tome:Clone(object: any, extendFunctionName: string?) : any
 	error(string.format("Failed to clone object: %s", tostring(object)))
 end
 
---[[
+do
+	local FORMAT_STRING: string = "\n\tAttempted to set property '%s' to an Instance created by Tome.\n\tReason: %*"
 	
-	@within Tome
-	@param instanceName string
-	@param properties {[string]: any}?
-	@return Instance
-	
-	Creates an Instance from the provider instanceName argument. Note that that instantiation
-	is not invoked within protected mode. This means instantiation instances that do not exist e.g. Apple
-	will throw an error and stop the entire thread.
+	--[[
+		
+		@within Tome
+		@param instanceName string
+		@param properties {[string]: any}?
+		@return Instance
+		
+		Creates an Instance from the provider instanceName argument. Note that that instantiation
+		is not invoked within protected mode. This means instantiation instances that do not exist e.g. Apple
+		will throw an error and stop the entire thread.
 
-	An optional properties argument can be passed to provide the instance with properties on a
-	string -> value basis. Note trying to set a property of the instance that doesn't exist will
-	result in a warning being thrown. To disable this ensure the Warnings metaprop of the Tome is false
-	It's recommended to allow warnings as they can show where memory might remain within the stack
-	Only disable it for secure production environments where logs are useless.
-	
-	Will throw an error if the Tome is in the middle of being destroyed.
-	
-	Example(s):
-	```luau
-	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
-	
-	local part = scopeTome:Instance("Part")
-	part.Parent = workspace
-	
-	task.wait(2)
-	
-	scopeTome:Destroy() -- Destroys the part
-	```
-	
-	```luau
-	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
-	
-	local part = scopeTome:Instance("Part", {
-		Color = Color3.new(1, 1, 1),
-		Size = Vector3.one,
-		Parent = workspace,
-	})
-	
-	task.wait(2)
-	
-	-- destroys the part
-	scopeTome:Destroy()
-	```
-	
-	```luau
-	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
-	
-	-- will throw an error as "Apple" isn't an actual instance type
-	scopeTome:Instance("Apple")
-	```
-	
-]]
-function Tome:Instance(instanceName: string, properties: {[string]: any}?) : Instance
-	assert(type(instanceName) == "string", "The instanceName argument must be a string type.")
-	assert(type(properties) == "table" or properties == nil, "The properties argument must be a table type or nil.")
-	
-	if self:IsDestroying() then
-		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "create an Instance"))
-	end
-	
-	local result: Instance = Instance.new(instanceName)
-	
-	if properties and self.__warnings then
-		for property: string, value: any in properties do
-			xpcall(function()
-				(result :: any)[property] = value
-			end, function(...)
-				warn(string.format([[
-					Attempted to apply property: %s to the created Instance.
-					]], tostring(property)))
-				warn("Extra details: ", ...)
-			end)
+		An optional properties argument can be passed to provide the instance with properties on a
+		string -> value basis. Note trying to set a property of the instance that doesn't exist will
+		result in a warning being thrown. To disable this ensure the Warnings metaprop of the Tome is false
+		It's recommended to allow warnings as they can show where memory might remain within the stack
+		Only disable it for secure production environments where logs are useless.
+		
+		Will throw an error if the Tome is in the middle of being destroyed.
+		
+		Example(s):
+		```luau
+		local Tome = require("../Path/To/Tome")
+		local scopeTome = Tome.new()
+		
+		local part = scopeTome:Instance("Part")
+		part.Parent = workspace
+		
+		task.wait(2)
+		
+		scopeTome:Destroy() -- Destroys the part
+		```
+		
+		```luau
+		local Tome = require("../Path/To/Tome")
+		local scopeTome = Tome.new()
+		
+		local part = scopeTome:Instance("Part", {
+			Color = Color3.new(1, 1, 1),
+			Size = Vector3.one,
+			Parent = workspace,
+		})
+		
+		task.wait(2)
+		
+		-- destroys the part
+		scopeTome:Destroy()
+		```
+		
+		```luau
+		local Tome = require("../Path/To/Tome")
+		local scopeTome = Tome.new()
+		
+		-- will throw an error as "Apple" isn't an actual instance type
+		scopeTome:Instance("Apple")
+		```
+		
+	]]
+	function Tome:Instance(instanceName: string, properties: {[string]: any}?) : Instance
+		assert(type(instanceName) == "string", "The instanceName argument must be a string type.")
+		assert(type(properties) == "table" or properties == nil, "The properties argument must be a table type or nil.")
+		
+		if self:IsDestroying() then
+			error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "create an Instance"))
 		end
+		
+		local result: Instance = Instance.new(instanceName)
+		
+		if properties then
+			for property: string, value: any in properties do
+				xpcall(function()
+					(result :: any)[property] = value
+				end, function(issue: string)
+					if not self.__warnings then
+						return
+					end
+					
+					warn(string.format(FORMAT_STRING, tostring(property), issue))
+				end)
+			end
+		end
+		
+		return self:Add(result, "Destroy")
 	end
-	
-	return self:Add(result)
 end
+
 
 --[[
 	
