@@ -332,13 +332,13 @@ local DEFAULT_USE_PARENT_METAPROPS: boolean = Static.UseParentMetaprops
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- add a cube to the new Tome
-	scopeTome:Add(workspace.Cube)
+	newTome:Add(workspace.Cube)
 	
 	-- destroys the Tome as well as the cube
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -385,10 +385,10 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	print("#1 Is this object a Tome? ", Tome.Is({})) -- false
-	print("#2 Is this object a Tome? ", Tome.Is(scopeTome)) -- true
+	print("#2 Is this object a Tome? ", Tome.Is(newTome)) -- true
 	print("#3 Is this object a Tome? ", Tome.Is()) -- false
 	```
 	
@@ -934,30 +934,30 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- construct a new Page for the Tome
-	local somePage = scopeTome:AddPage()
+	local somePage = newTome:AddPage()
 	
 	-- add an apple to the Page
 	somePage:Add(workspace.Apple)
 	
 	-- add a banana to the Tome
-	scopeTome:Add(workspace.Banana)
+	newTome:Add(workspace.Banana)
 	
 	-- destroys both the apple, and banana as the Page also gets destroyed
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- construct a new Page for the Tome with a provided name
-	scopeTome:AddPage("SomeName")
+	newTome:AddPage("SomeName")
 	
 	-- get the Page by name
-	local somePage = scopeTome:GetPage("SomeName")
+	local somePage = newTome:GetPage("SomeName")
 	```
 	
 ]]
@@ -1049,12 +1049,12 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local somePage = scopeTome:AddPage()
+	local somePage = newTome:AddPage()
 	
-	print(scopeTome:GetParent()) -> ()
-	print(somePage:GetParent()) -> scopeTome
+	print(newTome:GetParent()) -> ()
+	print(somePage:GetParent()) -> newTome
 	```
 	
 ]]
@@ -1112,15 +1112,15 @@ end
 	```luau
 	local Tome = require("../Path/To/Tome")
 	
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local somePage = scopeTome:AddPage("Demonstration")
+	local somePage = newTome:AddPage("Demonstration")
 	
-	print(scopeTome:GetPage("Demonstration")) -> Page(somePage)
+	print(newTome:GetPage("Demonstration")) -> Page(somePage)
 	
-	scopeTome:RipPage(somePage)
+	newTome:RipPage(somePage)
 	
-	print(scopeTome:GetPage("Demonstration")) -> nil -- the page has been completely erased
+	print(newTome:GetPage("Demonstration")) -> nil -- the page has been completely erased
 	```
 	
 ]]
@@ -1170,13 +1170,13 @@ end
 	```luau
 	local Tome = require("../Path/To/Tome")
 
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local somePage = scopeTome:AddPage("Demonstration")
+	local somePage = newTome:AddPage("Demonstration")
 
-	scopeTome:RipPages()
+	newTome:RipPages()
 
-	print(scopeTome:GetPage("Demonstration")) -> nil -- the page has been completely erased
+	print(newTome:GetPage("Demonstration")) -> nil -- the page has been completely erased
 	```
 	
 ]]
@@ -1201,14 +1201,14 @@ end
 	```luau
 	local Tome = require("../Path/To/Tome")
 
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- we need to access 'somePage' which is contained within another scope
 	do
-		local somePage = scopeTome:AddPage("Demonstration")
+		local somePage = newTome:AddPage("Demonstration")
 	end
 	
-	local somePage = scopeTome:GetPage("Demonstration")
+	local somePage = newTome:GetPage("Demonstration")
 	print(somePage) -> Page(somePage)
 	```
 
@@ -1241,19 +1241,19 @@ end
 	```luau
 	local Tome = require("../Path/To/Tome")
 
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	local someOtherTome = Tome.new()
 
-	-- initially create a Page within scopeTome
-	local somePage = scopeTome:AddPage("Demonstration")
+	-- initially create a Page within newTome
+	local somePage = newTome:AddPage("Demonstration")
 
-	print(scopeTome:GetPage("Demonstration")) -> Page(somePage)
+	print(newTome:GetPage("Demonstration")) -> Page(somePage)
 	print(someOtherTome:GetPage("Demonstration")) -> nil
 
 	-- at some point you may want to move the Page to another Tome or Page:
 	somePage:Parent(someOtherTome)
 
-	print(scopeTome:GetPage("Demonstration")) -> nil
+	print(newTome:GetPage("Demonstration")) -> nil
 	print(someOtherTome:GetPage("Demonstration")) -> Page(somePage)
 	```
 
@@ -1302,12 +1302,12 @@ end
 	```luau
 	local Tome = require("../Path/To/Tome")
 
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	local someOtherTome = Tome.new()
 
-	local somePage = scopeTome:AddPage("Demonstration")
+	local somePage = newTome:AddPage("Demonstration")
 
-	scopeTome:GivePage("Demonstration", someOtherTome)
+	newTome:GivePage("Demonstration", someOtherTome)
 	```
 
 ]]
@@ -1341,18 +1341,18 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	local someOtherTome = Tome.new()
 	
 	local apple = workspace.Apple
-	scopeTome:Add(apple)
+	newTome:Add(apple)
 	
-	print(scopeTome:Contains(apple)) -- true
+	print(newTome:Contains(apple)) -- true
 	
 	-- move the apple to the other Tome
-	scopeTome:Move(apple, someOtherTome)
+	newTome:Move(apple, someOtherTome)
 	
-	print(scopeTome:Contains(apple)) -- false
+	print(newTome:Contains(apple)) -- false
 	print(someOtherTome:Contains(apple)) -- true
 	```
 	
@@ -1462,39 +1462,39 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local cube = scopeTome:Add(workspace.Cube)
+	local cube = newTome:Add(workspace.Cube)
 	
 	-- will destroy the cube
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- Giving in a custom destroy method, in this case "Destroy"
 	-- which will be called on the cube as a function
-	local cube = scopeTome:Add(workspace.Cube, "Destroy")
+	local cube = newTome:Add(workspace.Cube, "Destroy")
 	
 	-- will destroy the cube
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- Giving in another custom method, in this case a function.
 	-- This function will be called when the Tome is destroyed,
 	-- giving in the object as the first argument to allow you to destroy the object however you like
-	local cube = scopeTome:Add(workspace.Cube, function(cube: BasePart)
+	local cube = newTome:Add(workspace.Cube, function(cube: BasePart)
 		cube:Destroy()
 	end)
 	
 	-- will destroy the cube
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -1647,13 +1647,13 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- adds the apple, banana and pear to the Tome
-	local apple, banana, pear = scopeTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
+	local apple, banana, pear = newTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
 	
 	-- will destroy the apple, banana and pear
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -1692,15 +1692,15 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	local objectsToAdd = {workspace.Apple, workspace.Banana, workspace.Pear}
 	
 	-- adds the apple, banana and pear to the Tome
-	local returnedObjects = scopeTome:AddFromArray(fruits)
+	local returnedObjects = newTome:AddFromArray(fruits)
 	
 	-- will destroy the apple, banana and pear
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -1787,15 +1787,15 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local cube = scopeTome:Add(workspace.Cube)
+	local cube = newTome:Add(workspace.Cube)
 	
 	-- remove the cube from the Tome
-	scopeTome:Remove(cube)
+	newTome:Remove(cube)
 	
 	-- will not destroy the cube as it was removed before the Tome was destroyed.
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -1849,15 +1849,15 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local apple, banana, pear = scopeTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
+	local apple, banana, pear = newTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
 	
 	-- don't include the pear
-	scopeTome:RemoveTuple(apple, banana)
+	newTome:RemoveTuple(apple, banana)
 	
 	-- will only destroy the pear, as the apple and the banana were removed from the Tome
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -1890,18 +1890,18 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	local objects = {workspace.Apple, workspace.Banana, workspace.Pear}
 	
 	-- adds the apple, banana and pear
-	scopeTome:AddFromArray(objects)
+	newTome:AddFromArray(objects)
 	
 	-- removes the apple, banana and pear
-	scopeTome:RemoveFromArray(objects)
+	newTome:RemoveFromArray(objects)
 	
 	-- destroys the Tome, and no objects get destroyed
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -1932,17 +1932,17 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- add a tag to the cube
 	local cube = workspace.Cube
 	cube:AddTag("SomeTag")
 	
 	-- add the cube to the Tome
-	scopeTome:Add(cube)
+	newTome:Add(cube)
 	
 	-- will remove the cube as it contains the "SomeTag" tag
-	scopeTome:RemoveObjectsWithTag("SomeTag")
+	newTome:RemoveObjectsWithTag("SomeTag")
 	```
 	
 ]]
@@ -1973,19 +1973,19 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	local cube = workspace.Cube -- "Part"
 	local someModel = workspace.SomeModel -- "Model"
 	
 	-- add the objects to the Tome
-	scopeTome:AddTuple(cube, someModel)
+	newTome:AddTuple(cube, someModel)
 	
 	-- remove the objects that are a "Model"
-	scopeTome:RemoveObjectsOfType("Model")
+	newTome:RemoveObjectsOfType("Model")
 	
 	-- destroys only the cube as the "someModel" object was removed prior because it was a model
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -2015,7 +2015,7 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	local Players = game:GetService("Players")
 	
@@ -2024,13 +2024,13 @@ end
 	end
 	
 	-- connects the playerAdded function to the Players.PlayerAdded signal
-	scopeTome:Connect(Players.PlayerAdded, playerAdded)
+	newTome:Connect(Players.PlayerAdded, playerAdded)
 	
 	task.wait(5)
 	
 	-- and then destroy the Tome which removes the connection
 	-- which doesn't welcome any more players :(
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -2110,25 +2110,25 @@ end
 	local Tome = require("../Path/To/Tome")
 	local SomeClass = require("../Path/To/Tome")
 	
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local class = scopeTome:Construct(SomeClass, "Apple", "Banana", "Pear")
+	local class = newTome:Construct(SomeClass, "Apple", "Banana", "Pear")
 	
 	-- will destroy the class object
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
 	local SomeClass = require("../Path/To/Tome")
 	
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- using the class constructor function as the first argument
-	local class = scopeTome:Construct(SomeClass.new, "Apple", "Banana", "Pear")
+	local class = newTome:Construct(SomeClass.new, "Apple", "Banana", "Pear")
 	
 	-- will destroy the class object
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -2171,21 +2171,21 @@ end
 	local Tome = require("../Path/To/Tome")
 	local SomeClass = require("../Path/To/Tome")
 	
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- add the apple to the Tome
-	scopeTome:Add(workspace.Apple)
-	print(scopeTome:Has(workspace.Apple)) -> true
+	newTome:Add(workspace.Apple)
+	print(newTome:Has(workspace.Apple)) -> true
 	
 	-- duplicate the Tome
-	local duplicateTome = scopeTome:Duplicate()
+	local duplicateTome = newTome:Duplicate()
 	print(duplicateTome:Has(workspace.Apple)) -> true
 	
 	-- destroys the apple as it existed within the duplicate Tome
 	duplicateTome:Destroy()
 	
 	-- prints false because the apple was destroyed by the duplicate Tome
-	print(scopeTome:Has(workspace.Apple)) -> false
+	print(newTome:Has(workspace.Apple)) -> false
 	```
 	
 ]]
@@ -2228,25 +2228,25 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local duplicateCube = scopeTome:Clone(workspace.Cube)
+	local duplicateCube = newTome:Clone(workspace.Cube)
 	
 	-- will destroy the duplicate cube
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
 	local SomeClass = require("../Path/To/Tome")
 	
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local class = scopeTome:Construct(SomeClass.new)
-	local duplicateClass = scopeTome:Clone(class)
+	local class = newTome:Construct(SomeClass.new)
+	local duplicateClass = newTome:Clone(class)
 	
 	-- both the class and duplicate class will be destroyed
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -2302,21 +2302,21 @@ do
 		Example(s):
 		```luau
 		local Tome = require("../Path/To/Tome")
-		local scopeTome = Tome.new()
+		local newTome = Tome.new()
 		
-		local part = scopeTome:Instance("Part")
+		local part = newTome:Instance("Part")
 		part.Parent = workspace
 		
 		task.wait(2)
 		
-		scopeTome:Destroy() -- Destroys the part
+		newTome:Destroy() -- Destroys the part
 		```
 		
 		```luau
 		local Tome = require("../Path/To/Tome")
-		local scopeTome = Tome.new()
+		local newTome = Tome.new()
 		
-		local part = scopeTome:Instance("Part", {
+		local part = newTome:Instance("Part", {
 			Color = Color3.new(1, 1, 1),
 			Size = Vector3.one,
 			Parent = workspace,
@@ -2325,15 +2325,15 @@ do
 		task.wait(2)
 		
 		-- destroys the part
-		scopeTome:Destroy()
+		newTome:Destroy()
 		```
 		
 		```luau
 		local Tome = require("../Path/To/Tome")
-		local scopeTome = Tome.new()
+		local newTome = Tome.new()
 		
 		-- will throw an error as "Apple" isn't an actual instance type
-		scopeTome:Instance("Apple")
+		newTome:Instance("Apple")
 		```
 		
 	]]
@@ -2431,12 +2431,12 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	local cube = workspace.Cube
 	
 	-- attach the Tome to the cube
-	scopeTome:Attach(cube)
+	newTome:Attach(cube)
 	
 	-- will also destroy the Tome, as the Tome attached to the cube
 	cube:Destroy()
@@ -2519,17 +2519,17 @@ end
 	Tome doesn't automatically add the clean up function into itself, if you need that behaviour, wrap
 	the clean up function as such:
 	```luau
-	local cleanUp: () -> () = scopeTome:AttachTuple(workspace.Cube, workspace.Cube2)
-	scopeTome:FastAdd(cleanUp, Tome.FunctionType)
+	local cleanUp: () -> () = newTome:AttachTuple(workspace.Cube, workspace.Cube2)
+	newTome:FastAdd(cleanUp, Tome.FunctionType)
 	```
 	
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	scopeTome:AttachTuple(workspace.Cube, workspace.Cube2)
-	scopeTome:Add(function()
+	newTome:AttachTuple(workspace.Cube, workspace.Cube2)
+	newTome:Add(function()
 		print("Either cube, or cube2 was destroyed!")
 	end)
 	
@@ -2538,12 +2538,12 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- use the variable to get the attachments
-	local cleanUpAttachments: () -> () = scopeTome:AttachTuple(workspace.Cube, workspace.Cube2)
+	local cleanUpAttachments: () -> () = newTome:AttachTuple(workspace.Cube, workspace.Cube2)
 	
-	scopeTome:Add(function()
+	newTome:Add(function()
 		print("Either cube, or cube2 was destroyed!")
 	end)
 	
@@ -2556,12 +2556,12 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- use the variable to get the attachments
-	local cleanUpAttachments: () -> (), attachments: {any} = scopeTome:AttachTuple(workspace.Cube, workspace.Cube2)
+	local cleanUpAttachments: () -> (), attachments: {any} = newTome:AttachTuple(workspace.Cube, workspace.Cube2)
 	
-	scopeTome:Add(function()
+	newTome:Add(function()
 		print("Either cube, or cube2 was destroyed!")
 	end)
 	
@@ -2607,19 +2607,19 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	local apple, banana, pear = workspace.Apple, workspace.Banana, workspace.Pear
 	
 	-- add all the fruits
-	scopeTome:AddTuple(apple, banana, pear)
+	newTome:AddTuple(apple, banana, pear)
 	
 	-- tag only the apple and banana
 	apple:AddTag("SomeTag")
 	banana:AddTag("SomeTag")
 	
 	-- destroys only the apple and banana. The pear remains as it wasn't tagged
-	scopeTome:DestroyObjectsWithTag("SomeTag")
+	newTome:DestroyObjectsWithTag("SomeTag")
 	```
 	
 ]]
@@ -2649,16 +2649,16 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- the apple is a model
-	scopeTome:Add(workspace.Apple)
+	newTome:Add(workspace.Apple)
 	
 	-- the cube is a part
-	scopeTome:Add(workspace.Cube)
+	newTome:Add(workspace.Cube)
 	
 	-- will object destroy the cube
-	scopeTome:DestroyObjectsOfType("BasePart")
+	newTome:DestroyObjectsOfType("BasePart")
 	```
 	
 ]]
@@ -2688,13 +2688,13 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	scopeTome:HookRunServiceSignal("RenderStepped", function(deltaTime: number)
+	newTome:HookRunServiceSignal("RenderStepped", function(deltaTime: number)
 		print(`[RenderStepped]: Time spent: {deltaTime}`)
 	end)
 
-	scopeTome:HookRunServiceSignal("Stepped", function(timeElapsed: number, deltaTime: number)
+	newTome:HookRunServiceSignal("Stepped", function(timeElapsed: number, deltaTime: number)
 		print(`[Stepped]: Time elapsed: {timeElapsed} Time spent: {deltaTime}`)
 	end)
 	```
@@ -2733,9 +2733,9 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local unbind: () -> () = scopeTome:BindRenderStepped("STEP", 1, function(deltaTime: number)
+	local unbind: () -> () = newTome:BindRenderStepped("STEP", 1, function(deltaTime: number)
 		print(`Time spent stepping... {deltaTime}`)
 	end)
 	
@@ -2783,15 +2783,15 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	scopeTome:BindRenderStepped("Test", 1, function(deltaTime: number)
+	newTome:BindRenderStepped("Test", 1, function(deltaTime: number)
 		print(`Time spent: {deltaTime}`)
 	end)
 	
 	task.wait(2)
 	
-	scopeTome:UnbindRenderStepped("Test")
+	newTome:UnbindRenderStepped("Test")
 	```
 	
 ]]
@@ -2819,13 +2819,13 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	someTime:Delay(3, function()
 		print("Destroyed the Tome")
 	end)
 	
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -2857,7 +2857,7 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	someTime:Spawn(function()
 		while true do
@@ -2870,7 +2870,7 @@ end
 	task.wait(5)
 	
 	-- cancels the thread preventing the loop from continuing
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -2923,12 +2923,12 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	print("This prints instantly")
 
-	scopeTome:DelayDestroy(1)
-	scopeTome:Yield()
+	newTome:DelayDestroy(1)
+	newTome:Yield()
 
 	print("This prints after ~1 second")
 	```
@@ -2953,17 +2953,17 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- check if the cube exists initially, which it doesn't
-	local exists: boolean = scopeTome:Contains(workspace.Cube)
+	local exists: boolean = newTome:Contains(workspace.Cube)
 	print(exists) -- false
 	
 	-- so we add the cube to the Tome
-	scopeTome:Add(workspace.Cube)
+	newTome:Add(workspace.Cube)
 	
 	-- and now that the cube has been added, true is returned
-	local exists: boolean = scopeTome:Contains(workspace.Cube)
+	local exists: boolean = newTome:Contains(workspace.Cube)
 	print(exists) -- true
 	```
 	
@@ -2987,9 +2987,9 @@ Tome.Has = Tome.Contains
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local signal = scopeTome:Signal()
+	local signal = newTome:Signal()
 	
 	signal:Connect(function(argument: string)
 		print(argument)
@@ -2999,7 +2999,7 @@ Tome.Has = Tome.Contains
 	signal:Fire("Hello, world!")
 	
 	-- destroy the signal manually (will remain in Tome memory until disposed)
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -3027,9 +3027,9 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local myTable: {[any]: any} = scopeTome:Table({})
+	local myTable: {[any]: any} = newTome:Table({})
 	
 	print(myTable)
 	```
@@ -3065,9 +3065,9 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local tween: Tween = scopeTome:Tween(workspce.Cube, TweenInfo.new(1), { Size = Vector3.one * 4 }, { Play = true })
+	local tween: Tween = newTome:Tween(workspce.Cube, TweenInfo.new(1), { Size = Vector3.one * 4 }, { Play = true })
 
 	local function completed() : ()
 		print("Finished tween")
@@ -3135,22 +3135,22 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local apple, banana = scopeTome:AddTuple(workspace.Apple, workspace.Banana)
+	local apple, banana = newTome:AddTuple(workspace.Apple, workspace.Banana)
 	
 	-- the apple will be destroyed
-	scopeTome:DestroyObject(apple)
+	newTome:DestroyObject(apple)
 	```
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	local banana = workspace.Banana
 	
 	-- nothing will happen bceause the banana isn't inside the Tome
-	scopeTome:DestroyObject(banana)
+	newTome:DestroyObject(banana)
 	```
 	
 ]]
@@ -3190,12 +3190,12 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local apple, banana, pear = scopeTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
+	local apple, banana, pear = newTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
 	
 	-- will only destroy the apple and banana
-	scopeTome:DestroyObjects(apple, banana)
+	newTome:DestroyObjects(apple, banana)
 	```
 	
 ]]
@@ -3220,21 +3220,21 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- this function contains a yield that will pause the Tome for 2 seconds
-	scopeTome:Add(function()
+	newTome:Add(function()
 		task.wait(2)
 	end)
 	
 	-- delay the code below by 0.5 seconds to let the Tome begin a destroy sequence
 	task.delay(0.5, function()
-		print(scopeTome:CanDestroy()) -- false, as the Tome is currently in the middle of being destroyed
+		print(newTome:CanDestroy()) -- false, as the Tome is currently in the middle of being destroyed
 	end)
 
-	print(scopeTome:CanDestroy()) -- true
+	print(newTome:CanDestroy()) -- true
 	
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -3251,12 +3251,12 @@ end
 
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	if scopeTome:IsDestroying() then
+	if newTome:IsDestroying() then
 		-- do nothing
 	else
-		scopeTome:Add(workspace.Cube)
+		newTome:Add(workspace.Cube)
 	end
 	```
 	
@@ -3275,11 +3275,11 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	scopeTome:AddTuple(workspace.Apple, workspace.Banana)
+	newTome:AddTuple(workspace.Apple, workspace.Banana)
 	
-	print(scopeTome:GetObjects()) -> {[Instance(Apple,REF)] = "Destroy", [Instance(Banana,REF)] = "Destroy"}
+	print(newTome:GetObjects()) -> {[Instance(Apple,REF)] = "Destroy", [Instance(Banana,REF)] = "Destroy"}
 	```
 	
 ]]
@@ -3296,11 +3296,11 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	scopeTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
+	newTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
 	
-	print(scopeTome:Count()) --> 3
+	print(newTome:Count()) --> 3
 	```
 	
 ]]
@@ -3328,26 +3328,26 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	scopeTome:Add(workspace.Apple)
-	scopeTome:Connect(workspace.ChildAdded, print)
-	scopeTome:Add(function() end)
+	newTome:Add(workspace.Apple)
+	newTome:Connect(workspace.ChildAdded, print)
+	newTome:Add(function() end)
 	
-	local objects = scopeTome:GetObjectsOfType("function")
+	local objects = newTome:GetObjectsOfType("function")
 	print(objects) -> {[1] = function(REF)}
 	```
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	scopeTome:Add(workspace.Apple)
-	scopeTome:Connect(workspace.ChildAdded, print)
-	scopeTome:Tween(workspace.Cube, TweenInfo.new(5), { Size = Vector3.one })
-	scopeTome:Tween(workspace.AnotherCube, TweenInfo.new(5), { Size = Vector3.one })
+	newTome:Add(workspace.Apple)
+	newTome:Connect(workspace.ChildAdded, print)
+	newTome:Tween(workspace.Cube, TweenInfo.new(5), { Size = Vector3.one })
+	newTome:Tween(workspace.AnotherCube, TweenInfo.new(5), { Size = Vector3.one })
 	
-	local objects = scopeTome:GetObjectsOfType("Tween")
+	local objects = newTome:GetObjectsOfType("Tween")
 	print(objects) -> {[1] = Instance(Tween,REF), [2] = Instance(Tween,REF)}
 	```
 	
@@ -3383,16 +3383,16 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- set a custom tag (internally will be randomized if not set)
-	scopeTome:SetTag("Demonstration")
+	newTome:SetTag("Demonstration")
 
 	-- add the tag we just created
-	local ourTag: string = scopeTome:GetTag()
+	local ourTag: string = newTome:GetTag()
 	workspace.Cube:AddTag(ourTag)
 
-	print(scopeTome:GetObjectsWithTag(ourTag)) -> {Instance(Part, REF)}
+	print(newTome:GetObjectsWithTag(ourTag)) -> {Instance(Part, REF)}
 	```
 
 ]]
@@ -3424,17 +3424,17 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- construct a new Page and add an "apple" object to it
-	local somePage = scopeTome:AddPage()
+	local somePage = newTome:AddPage()
 	somePage:Add(workspace.Apple)
 	
 	-- add a "banana" object to the main Tome
-	scopeTome:Add(workspace.Banana)
+	newTome:Add(workspace.Banana)
 	
 	-- destroys only the banana as the apple was contained within a Page
-	scopeTome:DestroyAllObjects()
+	newTome:DestroyAllObjects()
 	```
 	
 ]]
@@ -3483,16 +3483,16 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 
-	scopeTome:Add(workspace.Cube)
+	newTome:Add(workspace.Cube)
 	
-	local somePage = scopeTome:AddPage()
+	local somePage = newTome:AddPage()
 	somePage:Add(workspace.Cube2)
 	
-	scopeTome:DestroyAllPages()
+	newTome:DestroyAllPages()
 
-	print(scopeTome:GetObjects()) -> {[Instance(Cube, REF)] Destroy}
+	print(newTome:GetObjects()) -> {[Instance(Cube, REF)] Destroy}
 	print(somePage:GetObjects()) -> {} -- cube 2 no longer remains
 
 	```
@@ -3521,21 +3521,21 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	scopeTome:Add(workspace.Apple)
+	newTome:Add(workspace.Apple)
 	
 	-- destroys the apple after 2 seconds
-	scopeTome:DelayDestroy(2)
+	newTome:DelayDestroy(2)
 	```
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	scopeTome:Add(workspace.Apple)
+	newTome:Add(workspace.Apple)
 	
-	local tomeDestroyThread: thread = scopeTome:DelayDestroy(5)
+	local tomeDestroyThread: thread = newTome:DelayDestroy(5)
 	
 	task.wait(2)
 	
@@ -3564,9 +3564,9 @@ end
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local destroyTome: () -> () = scopeTome:WrapDestroy()
+	local destroyTome: () -> () = newTome:WrapDestroy()
 	
 	-- destroys the Tome as though invoking Tome:Destroy
 	destroyTome()
@@ -3605,27 +3605,27 @@ end
 
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	scopeTome:OnDestroy(function()
+	newTome:OnDestroy(function()
 		print("This Tome has finished destroying itself")
 	end)
 	
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
-	local unattachCallback: () -> () = scopeTome:OnDestroy(function()
+	local unattachCallback: () -> () = newTome:OnDestroy(function()
 		print("This Tome has finished destroying itself")
 	end)
 	
 	-- removes the callback from the Tome
 	unattachCallback()
 	
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
@@ -3675,13 +3675,13 @@ end
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
-	local scopeTome = Tome.new()
+	local newTome = Tome.new()
 	
 	-- add a cube to the Tome
-	scopeTome:Add(workspace.Cube)
+	newTome:Add(workspace.Cube)
 	
 	-- destroys the Tome, which in this case will destroy the cube
-	scopeTome:Destroy()
+	newTome:Destroy()
 	```
 	
 ]]
