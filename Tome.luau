@@ -2288,14 +2288,14 @@ do
 		@return Instance
 		
 		Creates an Instance from the provider instanceName argument. Note that that instantiation
-		is not invoked within protected mode. This means instantiation instances that do not exist e.g. Apple
-		will throw an error and stop the entire thread.
-
-		An optional properties argument can be passed to provide the instance with properties on a
-		string -> value basis. Note trying to set a property of the instance that doesn't exist will
-		result in a warning being thrown. To disable this ensure the Warnings metaprop of the Tome is false
-		It's recommended to allow warnings as they can show where memory might remain within the stack
-		Only disable it for secure production environments where logs are useless.
+		is not invoked in protected mode. This means instantiation instances that do not exist
+		will throw an error
+		
+		Optionally you can pass in a properties dictionary ([property] = value) to set them after
+		instantiation. Properties that are invalid will be caught in protected mode, and will throw
+		a warning if Warnings is enabled within the Tome.
+		
+		Optionally you can also pass in a custom destroy method as the 3rd argument.
 		
 		Will throw an error if the Tome is in the middle of being destroyed.
 		
@@ -2337,7 +2337,7 @@ do
 		```
 		
 	]]
-	function Tome:Instance(instanceName: string, properties: {[string]: any}?) : Instance
+	function Tome:Instance(instanceName: string, properties: {[string]: any}?, destroyMethod: DestroyMethod?) : any
 		assert(type(instanceName) == "string", "The instanceName argument must be a string type.")
 		assert(type(properties) == "table" or properties == nil, "The properties argument must be a table type or nil.")
 		
@@ -2346,6 +2346,9 @@ do
 		end
 		
 		local result: Instance = Instance.new(instanceName)
+		if not self.__fastAdd then
+			validateObject(result, self)
+		end
 		
 		if properties then
 			for property: string, value: any in properties do
@@ -2361,7 +2364,9 @@ do
 			end
 		end
 		
-		return self:Add(result, "Destroy")
+		self.__objects[result] = destroyMethod or "Destroy"
+		
+		return result
 	end
 end
 
@@ -2378,10 +2383,12 @@ end
 	The instance will copy all properties, attributes and tags.
 	Descendants will not copy over.
 	
+	Optionally you can also pass in a custom destroy method as the 3rd argument.
+	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
 ]]
-function Tome:FromExisting(instance: Instance, destroyMethod: DestroyMethod?) : Instance
+function Tome:FromExisting(instance: Instance, destroyMethod: DestroyMethod?) : any
 	assert(typeof(instance) == "Instance", "Expected argument #1 'instance' to be an Instance type.")
 	
 	if self:IsDestroying() then

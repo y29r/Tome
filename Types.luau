@@ -99,8 +99,8 @@ export type Tome = {
 	Construct: (self: Tome, class: any, ...any) -> any,
 	Duplicate: (self: Tome) -> Tome,
 	Clone: (self: Tome, object: any, extendFunctionName: string?) -> any,
-	Instance: (self: Tome, instanceName: string, properties: {[string]: any}?) -> Instance,
-	FromExisting: (self: Tome, instance: Instance) -> Instance,
+	Instance: (self: Tome, instanceName: string, properties: {[string]: any}?, destroyMethod: DestroyMethod?) -> any,
+	FromExisting: (self: Tome, instance: Instance, destroyMethod: DestroyMethod?) -> any,
 	Attach: (self: Tome, object: any) -> () -> (),
 	AttachTuple: (self: Tome, ...any) -> (() -> (), {Attachment}),
 	
