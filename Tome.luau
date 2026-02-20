@@ -2826,14 +2826,18 @@ end
 	
 ]]
 function Tome:Delay<vargs>(duration: number, listener: (...vargs) -> ...any, ...: vargs) : thread
-	assert(type(duration) == "number", "Tome:Delay duration argument must be a number type,")
-	assert(type(listener) == "function", "Tome:Delay listener argument must be a function type.")
+	assert(type(duration) == "number", "Expected argument #1 'duration' to be a number type.")
+	assert(type(listener) == "function", "Expected argument #2 'listener' to be a function type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "delay a thread"))
 	end
 	
-	return self:Add(task.delay(duration, listener, ...))
+	local delayedThread: thread = task.delay(duration, listener, ...)
+	
+	self.__objects[delayedThread] = ThreadType
+	
+	return delayedThread
 end
 
 --[[
