@@ -2381,14 +2381,21 @@ end
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
 ]]
-function Tome:FromExisting(instance: Instance) : Instance
-	assert(typeof(instance) == "Instance", "Tome:FromExisting the instance argument must be an Instance type.")
+function Tome:FromExisting(instance: Instance, destroyMethod: DestroyMethod?) : Instance
+	assert(typeof(instance) == "Instance", "Expected argument #1 'instance' to be an Instance type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "create an Instance from existing"))
 	end
 	
-	return self:Add(Instance.fromExisting(instance))
+	local fromExisting: Instance = Instance.fromExisting(instance)
+	if not self.__fastAdd then
+		validateObject(fromExisting, self)
+	end
+	
+	self.__objects[fromExisting] = destroyMethod or "Destroy"
+	
+	return fromExisting
 end
 
 --[[
