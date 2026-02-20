@@ -1021,7 +1021,7 @@ Tome.Extend = Tome.AddPage
 function Tome:__findPage(pageToFind: Tome) : (Tome?, Tome?)
 	local subPages: {any} = {}
 	
-	for _: string, page: Tome in self.__pages do
+	for name: string, page: Tome in self.__pages do
 		if page == pageToFind then
 			return page, self
 		end
@@ -1029,7 +1029,7 @@ function Tome:__findPage(pageToFind: Tome) : (Tome?, Tome?)
 		table.insert(subPages, page)
 	end
 	
-	for _, page: Tome in subPages do
+	for name, page: Tome in subPages do
 		local pageFound: Tome? = page:__findPage(pageToFind)
 		if pageFound then
 			return pageFound, page
@@ -1866,7 +1866,7 @@ function Tome:RemoveTuple<object...>(...) : object...
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "remove tuple objects"))
 	end
 	
-	for _: number, object: any in {...} do
+	for index: number, object: any in {...} do
 		self:Remove(object)
 	end
 	
@@ -1912,7 +1912,7 @@ function Tome:RemoveFromArray<objectsArray>(objectsArray: objectsArray) : object
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "remove objects from array"))
 	end
 	
-	for _: number, object: any in objectsArray do
+	for index: number, object: any in objectsArray do
 		self:Remove(object)
 	end
 	
@@ -2631,7 +2631,7 @@ function Tome:DestroyObjectsWithTag(tag: string) : ()
 	end
 	
 	local collectedObjects: {Instance} = self:GetObjectsWithTag(tag)
-	for _: number, object: Instance in collectedObjects do
+	for index: number, object: Instance in collectedObjects do
 		self:DestroyObject(object)
 	end
 end
@@ -2670,7 +2670,7 @@ function Tome:DestroyObjectsOfType(typeName: string) : ()
 	end
 	
 	local collectedObjects: {any} = self:GetObjectsOfType(typeName)
-	for _: number, object: any in collectedObjects do
+	for index: number, object: any in collectedObjects do
 		self:DestroyObject(object)
 	end
 end
@@ -3204,7 +3204,7 @@ function Tome:DestroyObjects(...: any) : ()
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "destroy objects"))
 	end
 	
-	for _: number, object: any in {...} do
+	for index: number, object: any in {...} do
 		self:DestroyObject(object)
 	end
 end
