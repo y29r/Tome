@@ -2745,19 +2745,15 @@ end
 	
 ]]
 function Tome:BindRenderStepped(name: string, renderPriority: number?, listener: (deltaTime: number) -> ()) : () -> ()
-	assert(type(name) == "string", "Tome:BindRenderStepped name argument must be a string type.")
-	assert(type(renderPriority) == "number" or renderPriority == nil, "Tome:BindRenderStepped renderPriority argument must be a number type, or nil.")
-	assert(type(listener) == "function", "Tome:BindRenderStepped listener argument must be a function type.")
+	assert(type(name) == "string", "Expected argument #1 'name' to be a number type.")
+	assert(type(renderPriority) == "number" or renderPriority == nil, "Expected argument #2 'renderPriority' to be a number type or nil.")
+	assert(type(listener) == "function", "Expected argument #3 'listener' to be a function type.")
 	
 	if self:IsDestroying() then
 		throwError(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "bind to render step"))
 	end
 	
-	if renderPriority then
-		renderPriority = renderPriority and math.max(math.floor(renderPriority), 1) or 1
-		
-		RunService:BindToRenderStep(name, renderPriority, listener)
-	end
+	RunService:BindToRenderStep(name, renderPriority or 1, listener)
 	
 	local function unbindRenderStepFunction() : ()
 		self.__objects[unbindRenderStepFunction] = nil
@@ -2765,7 +2761,7 @@ function Tome:BindRenderStepped(name: string, renderPriority: number?, listener:
 		RunService:UnbindFromRenderStep(name)
 	end
 	
-	return self:Add(unbindRenderStepFunction)
+	return self:FastAdd(unbindRenderStepFunction, FunctionType)
 end
 
 --[[
