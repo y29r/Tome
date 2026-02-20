@@ -2573,7 +2573,7 @@ end
 	
 ]]
 function Tome:AttachTuple(...: any) : (() -> (), {Attachment})
-	local attachments: {Attachment} = {}
+	local attachments: {Attachment} = self:Table({})
 	
 	for index: number, object: any in {...} do
 		table.insert(attachments, self:Attach(object))
