@@ -2875,13 +2875,17 @@ end
 	
 ]]
 function Tome:Spawn<vargs>(listener: (...vargs) -> ...any, ...: vargs) : thread
-	assert(type(listener) == "function", "Tome:Spawn listener argument must be a function type.")
+	assert(type(listener) == "function", "Expected argument #1 'listener' to be a function type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "spawn a thread"))
 	end
 	
-	return self:Add(task.spawn(listener, ...))
+	local spawnedThread: thread = task.spawn(listener, ...)
+	
+	self.__objects[spawnedThread] = ThreadType
+	
+	return spawnedThread
 end
 
 --[[
