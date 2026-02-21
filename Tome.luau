@@ -804,7 +804,7 @@ end
 	
 ]]
 function Tome:SetTag(tag: string?) : Tome
-	assert(type(tag) == "string", "Tome:SetTag tag argument must be a string type.")
+	assert(type(tag) == "string", "Expected argument #1 'tag' to be a string type, or nil.")
 	
 	local oldTag: string? = self:GetTag()
 	if oldTag then
@@ -900,7 +900,7 @@ end
 	
 ]]
 function Tome:Rename(name: string?) : Tome
-	assert(type(name) == "string" or name == nil, "Tome:Rename name argument must be a string type, or nil.")
+	assert(type(name) == "string" or name == nil, "Expected argument #1 'name' to be a string type, or nil.")
 	
 	self.__name = name
 	
@@ -962,7 +962,7 @@ end
 	
 ]]
 function Tome:AddPage(name: string?, metaprops: Types.Metaprops?) : Tome
-	assert(type(name) == "string" or name == nil, "Tome:AddPage name argument must be a string type, or nil.")
+	assert(type(name) == "string" or name == nil, "Expected argument #1 'name' to be a string type, or nil.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add a Page to the Tome"))
@@ -1029,7 +1029,7 @@ function Tome:__findPage(pageToFind: Tome) : (Tome?, Tome?)
 		table.insert(subPages, page)
 	end
 	
-	for name, page: Tome in subPages do
+	for index: number, page: Tome in subPages do
 		local pageFound: Tome? = page:__findPage(pageToFind)
 		if pageFound then
 			return pageFound, page
@@ -1126,7 +1126,7 @@ end
 ]]
 function Tome:RipPage(nameOrPage: string | Tome) : ()
 	local nameOrPageType: string = realTypeOf(nameOrPage)
-	assert(nameOrPageType == "string" or nameOrPageType == "Tome", "Tome:RipPage nameOrPage argument must be a string or Tome type.")
+	assert(nameOrPageType == "string" or nameOrPageType == "Tome", "Expected argument #1 'nameOrPage' to be a string or Tome type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "rip Page from the Tome"))
@@ -1214,7 +1214,7 @@ end
 
 ]]
 function Tome:GetPage(name: string) : Tome?
-	assert(type(name) == "string", "Attempted to acquire a Page, however the name argument provided wasn't a string type")
+	assert(type(name) == "string", "Expected argument #1 'name' to be a string type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "get a Page"))
@@ -1260,7 +1260,7 @@ end
 ]]
 function Tome:Parent(newTome: Tome?) : Tome
 	local isTome: boolean = realTypeOf(newTome) == "Tome"
-	assert(isTome or newTome == nil, "Tome:Parent newTome argument must be a Tome type, or nil.")
+	assert(isTome or newTome == nil, "Expected argument #1 'newTome' to be a Tome type, or nil.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "parent a Tome"))
@@ -1358,10 +1358,7 @@ end
 	
 ]]
 function Tome:Move<object>(object: object, otherTome: Tome) : object
-	local parentIsTome: boolean = realTypeOf(otherTome) == "Tome"
-	if not parentIsTome then
-		throwError("Tome:Move otherTome argument must be a Tome.", "Ensure the provided 'otherTome' argument is a Tome.")
-	end
+	assert(realTypeOf(otherTome) == "Tome", "Expected argument #2 'otherTome' to be a Tome type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "move object to another Tome"))
@@ -1541,7 +1538,7 @@ function Tome:AddFromDictionary(dictionary: ObjectDictionary) : ObjectDictionary
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add dictionary of objects"))
 	end
 	
-	assert(type(dictionary) == "table", "Expected argument #1 dictionary to be a table type")
+	assert(type(dictionary) == "table", "Expected argument #1 'dictionary' to be a table type.")
 	
 	local FAST_ADD: boolean = self.__fastAdd
 	
@@ -1705,7 +1702,7 @@ end
 	
 ]]
 function Tome:AddFromArray<objectsArray>(objectsArray: objectsArray) : objectsArray
-	assert(type(objectsArray) == "table", "Expected argument #1 objectsArray to be a table type.")
+	assert(type(objectsArray) == "table", "Expected argument #1 'objectsArray' to be a table type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add objects from array"))
@@ -1747,7 +1744,7 @@ function Tome:AddPromise(promise: Types.Promise) : Types.Promise -- any should b
 		and type(promise.finally) == "function"
 		and type(promise.cancel) == "function"
 		,[[
-			Tome:AddPromise promise argument must be a Promise.
+			Expected argument #1 'promise' to be a Promise type.
 		]]
 	)
 	
@@ -1763,7 +1760,7 @@ function Tome:AddPromise(promise: Types.Promise) : Types.Promise -- any should b
 			self.__objects[typedPromise] = nil
 		end)
 		
-		return self:Add(typedPromise, "cancel")
+		return self:FastAdd(typedPromise, "cancel")
 	end
 	
 	return throwError("The provided Promise has already finished executing.", "Ensure the provided Promise is still active.")
@@ -1906,7 +1903,7 @@ end
 	
 ]]
 function Tome:RemoveFromArray<objectsArray>(objectsArray: objectsArray) : objectsArray
-	assert(type(objectsArray) == "table", "Tome:RemoveFromArray objectArray argument must be a table type.")
+	assert(type(objectsArray) == "table", "Expected argument #1 'objectsArray' to be a table type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "remove objects from array"))
@@ -1947,7 +1944,7 @@ end
 	
 ]]
 function Tome:RemoveObjectsWithTag(tag: string) : ()
-	assert(type(tag) == "string", "Tome:RemoveObjectsWithTag tag argument must be a string type.")
+	assert(type(tag) == "string", "Expected argument #1 'tag' to be a string type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "remove objects with tag"))
@@ -1990,7 +1987,7 @@ end
 	
 ]]
 function Tome:RemoveObjectsOfType(typeName: string) : ()
-	assert(type(typeName) == "string", "Expected argument #1 to be a string.")
+	assert(type(typeName) == "string", "Expected argument #1 to be a string type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "remove objects of class"))
@@ -2338,8 +2335,8 @@ do
 		
 	]]
 	function Tome:Instance(instanceName: string, properties: {[string]: any}?, destroyMethod: DestroyMethod?) : any
-		assert(type(instanceName) == "string", "The instanceName argument must be a string type.")
-		assert(type(properties) == "table" or properties == nil, "The properties argument must be a table type or nil.")
+		assert(type(instanceName) == "string", "Expected argument #1 'instanceName' to be a string type.")
+		assert(type(properties) == "table" or properties == nil, "Expected argument #2 'properties' to be a table type, or nil.")
 		
 		if self:IsDestroying() then
 			error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "create an Instance"))
@@ -2624,7 +2621,7 @@ end
 	
 ]]
 function Tome:DestroyObjectsWithTag(tag: string) : ()
-	assert(type(tag) == "string", "Tome:DestroyObjectsWithTag tag argument must be a string type.")
+	assert(type(tag) == "string", "Expected argument #1 'tag' to be a string type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, string.format("destroy objects with tag: %s", tag)))
@@ -2663,7 +2660,7 @@ end
 	
 ]]
 function Tome:DestroyObjectsOfType(typeName: string) : ()
-	assert(type(typeName) == "string", "Expected argument #1 to be a string.")
+	assert(type(typeName) == "string", "Expected argument #1 'typeName' to be a string type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, string.format("destroy objects of class: %s", typeName)))
@@ -2701,7 +2698,8 @@ end
 
 ]]
 function Tome:HookRunServiceSignal(signalName: RunServiceSignalName, listener: (deltaTime: number) -> () | (time: number, deltaTime: number) -> ()) : RBXScriptConnection
-	assert(type(listener) == "function", "Bad argument #2 expected a function type but got something else")
+	assert(type(signalName) == "string", "Expected argument #1 'signalName' to be a string type.")
+	assert(type(listener) == "function", "Expected argument #2 'listener' to be a function type.")
 	
 	local signal: RBXScriptSignal = assert((RunService :: any)[signalName], "Expected a RunService signal but got nil")
 	
@@ -2746,7 +2744,7 @@ end
 ]]
 function Tome:BindRenderStepped(name: string, renderPriority: number?, listener: (deltaTime: number) -> ()) : () -> ()
 	assert(type(name) == "string", "Expected argument #1 'name' to be a number type.")
-	assert(type(renderPriority) == "number" or renderPriority == nil, "Expected argument #2 'renderPriority' to be a number type or nil.")
+	assert(type(renderPriority) == "number" or renderPriority == nil, "Expected argument #2 'renderPriority' to be a number type, or nil.")
 	assert(type(listener) == "function", "Expected argument #3 'listener' to be a function type.")
 	
 	if self:IsDestroying() then
@@ -2792,7 +2790,7 @@ end
 	
 ]]
 function Tome:UnbindRenderStepped(name: string) : ()
-	assert(type(name) == "string", "Tome:UnbindRenderStepped name argument must be a string type.")
+	assert(type(name) == "string", "Expected argument #1 'name' to be a string type.")
 	
 	RunService:UnbindFromRenderStep(name)
 end
@@ -2904,7 +2902,7 @@ end
 	
 ]]
 function Tome:Defer<vargs>(listener: (...vargs) -> ...any, ...: vargs) : thread
-	assert(type(listener) == "function", "Tome:Defer listener argument must be a function type.")
+	assert(type(listener) == "function", "Expected argument #1 'listener' to be a function type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "defer a thread"))
@@ -3016,7 +3014,11 @@ function Tome:Signal() : Signal.Signal
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "construct a Signal"))
 	end
 	
-	return self:Construct(Signal)
+	local signal: Signal.Signal = Signal.new()
+	
+	self.__objects[signal] = Signal.Destroy
+	
+	return signal
 end
 
 --[[
@@ -3048,7 +3050,11 @@ function Tome:Table(existing: {[any]: any}?) : {[any]: any}
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add a table"))
 	end
 	
-	return self:Add(existing or {}, table.clear)
+	local tableToUse: {[any]: any} = {}
+	
+	self.__objects[tableToUse] = table.clear
+	
+	return tableToUse
 end
 
 --[[
@@ -3094,16 +3100,18 @@ function Tome:Tween(
 		RemoveOnComplete: boolean?,
 	}?
 ) : Tween
-	assert(typeof(instance) == "Instance", "Tome:Tween instance argument must be an Instance type.")
-	assert(typeof(tweenInfo) == "TweenInfo", "Tome:Tween tweenInfo argument must be a TweenInfo type.")
-	assert(typeof(propertyTable) == "table", "Tome:Tween propertyTable argument must be a table type.")
-	assert(type(metadata) == "table" or metadata == nil, "Tome:Tween metadata argument must be a table type, or nil.")
+	assert(typeof(instance) == "Instance", "Expected argument #1 'instance' to be an Instance type.")
+	assert(typeof(tweenInfo) == "TweenInfo", "Expected argument #2 'tweenInfo' to be a TweenInfo type.")
+	assert(type(propertyTable) == "table", "Expected argument #3 'propertyTable' to be a table type.")
+	assert(type(metadata) == "table" or metadata == nil, "Expected argument #4 'metadata' to be a table type, or nil.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "create a Tween"))
 	end
 	
-	local tween: Tween = self:Add(TweenService:Create(instance, tweenInfo, propertyTable))
+	local tween: Tween = TweenService:Create(instance, tweenInfo, propertyTable)
+	
+	self.__objects[tween] = TweenType
 	
 	if metadata then
 		if metadata.RemoveOnComplete then
@@ -3361,7 +3369,7 @@ end
 	
 ]]
 function Tome:GetObjectsOfType(typeName: string) : {any}
-	assert(type(typeName) == "string", "Tome:GetObjectsOfType className argument must be a string type.")
+	assert(type(typeName) == "string", "Expected argument #1 'typeName' to be a string type.")
 	
 	local objects: {[any]: DestroyMethod} = self.__objects
 	local collectedObjects: {any} = {}
@@ -3405,7 +3413,7 @@ end
 
 ]]
 function Tome:GetObjectsWithTag(tag: string) : {Instance}
-	assert(type(tag) == "string", "Tome:GetObjectsWithTag tag argument must be a string type.")
+	assert(type(tag) == "string", "Expected argument #1 'tag' to be a string type.")
 	
 	local objects: {[any]: DestroyMethod} = self.__objects
 	local collectedObjects: {Instance} = {}
@@ -3638,8 +3646,8 @@ end
 	
 ]]
 function Tome:OnDestroy(callback: (...any) -> (), onDestroyParams: OnDestroyParams?) : () -> ()
-	assert(type(callback) == "function", "Tome:OnDestroy callback argument must be a function type.")
-	assert(type(onDestroyParams) == "table", "Expected argument #2 to be a table type. Got something else instead")
+	assert(type(callback) == "function", "Expected argument #1 'callback' to be a function type.")
+	assert(type(onDestroyParams) == "table", "Expected argument #2 'onDestroyParams' to be a table type.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "attach a destroy callback"))
