@@ -2945,7 +2945,7 @@ end
 function Tome:Yield(thread: thread?) : ()
 	local currentThread: thread = thread or coroutine.running()
 	
-	self:FastAdd(currentThread, coroutine.resume)
+	self.__objects[currentThread] = coroutine.resume
 	
 	return coroutine.yield()
 end
