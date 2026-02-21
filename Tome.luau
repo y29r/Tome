@@ -2910,7 +2910,11 @@ function Tome:Defer<vargs>(listener: (...vargs) -> ...any, ...: vargs) : thread
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "defer a thread"))
 	end
 	
-	return self:Add(task.defer(listener, ...))
+	local deferredThread: thread = task.defer(listener, ...)
+	
+	self.__objects[deferredThread] = ThreadType
+	
+	return deferredThread
 end
 
 --[[
