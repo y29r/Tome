@@ -183,7 +183,7 @@
 	Tome:DestroyAllObjects : Destroys all the objects contained within the Tome.
 	Tome:DestroyAllPages : Destroys all the Pages contained within the Tome.
 	Tome:DestroyObject : Destroys the provided object if it exists within the Tome.
-	Tome:DestroyObjects : Destroys the provided objects if they exists within the Tome.
+	Tome:DestroyTuple : Destroys the provided tuple of objects if they exists within the Tome.
 	Tome:DestroyObjectsWithTag : Destroys all the objects in the Tome that have the specified tag.
 	Tome:DestroyObjectsOfType : Destroys all the objects in the Tome that have the specified type.
 	Tome:Contains : Returns whether the specified object exists within the Tome.
@@ -3211,11 +3211,11 @@ end
 	local apple, banana, pear = newTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
 	
 	-- will only destroy the apple and banana
-	newTome:DestroyObjects(apple, banana)
+	newTome:DestroyTuple(apple, banana)
 	```
 	
 ]]
-function Tome:DestroyObjects(...: any) : ()
+function Tome:DestroyTuple(...: any) : ()
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "destroy objects"))
 	end

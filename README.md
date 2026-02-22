@@ -27,7 +27,7 @@ An object-oriented garbage collection module for luau
 	- `Tome:DestroyAllObjects` : Destroys all the objects within the Tome.
 	- `Tome:DestroyAllPages` : Destroys all the Pages within the Tome.
 	- `Tome:DestroyObject` : Destroys the provided object if it exists within the Tome.
-	- `Tome:DestroyObjects` : Destroys the provided objects if they exist within the Tome.
+	- `Tome:DestroyTuple` : Destroys the provided tuple objects if they exist within the Tome.
 	- `Tome:DestroyObjectsWithTag` : Destroys all the objects in the Tome that have the specified tag.
 	- `Tome:DestroyObjectsOfType` : Destroys all the objects in the Tome that have the specified type (`Instance`s will use `:IsA` methods to check elgibility)
 	- `Tome:Contains` : Returns whether the specified object exists in the Tome.

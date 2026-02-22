@@ -159,7 +159,7 @@ export type Tome = {
 	DestroyObjectsWithTag: (self: Tome, tag: string) -> (),
 	DestroyObjectsOfType: (self: Tome, typeName: string) -> (),
 	DestroyObject: (self: Tome, object: any) -> (),
-	DestroyObjects: (self: Tome, ...any) -> (),
+	DestroyTuple: (self: Tome, ...any) -> (),
 	DestroyAllObjects: (self: Tome, __ignoreDestroyingProperty: boolean?) -> (),
 	DestroyAllPages: (self: Tome, __ignoreDestroyingProperty: boolean?) -> (),
 	
