@@ -2244,7 +2244,14 @@ function Tome:Clone(object: any, extendFunctionName: string?) : any
 		
 		return throwError("Attempted to clone a table (most likely a class) however the table doesn't contain an extension/clone method.", "Ensure the provided class has en extension method. If it does, add it to the extension list at the top of the module.")
 	elseif objectType == "Instance" then
-		return self:Add(object:Clone(), "Destroy")
+		local clonedObject: any = object:Clone()
+		if not self.__fastAdd then
+			validateObject(clonedObject, self :: Tome)
+		end
+		
+		self.__objects[clonedObject] = "Destroy"
+		
+		return clonedObject
 	end
 	
 	error(string.format("Failed to clone object: %s", tostring(object)))
