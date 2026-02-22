@@ -1195,8 +1195,6 @@ end
 	Attempts to return a Page from a given name. Typically useful when a Tome is shared
 	among other scripts, and in some cases fetching a specific Page may be necessary.
 	
-	Will throw an error if the Tome is in the middle being destroyed.
-	
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
@@ -1215,10 +1213,6 @@ end
 ]]
 function Tome:GetPage(name: string) : Tome?
 	assert(type(name) == "string", "Expected argument #1 'name' to be a string type.")
-	
-	if self:IsDestroying() then
-		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "get a Page"))
-	end
 	
 	return self.__pages[name]
 end
