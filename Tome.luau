@@ -1379,9 +1379,6 @@ end
 	This it not used as a method in Tome to improve performance as indexing is
 	signficantly slower with metatables (especially double-indexing)
 	
-	TODO: Expose this function as a "validity" function to check if an object
-	is able to be added into the Tome.
-	
 ]]
 local function validateObject(object: any, tome: Tome) : ()
 	local objectType: string = realTypeOf(object)
@@ -1513,6 +1510,8 @@ end
 	Where the key(s) will be the object(s) and the value(s) will be the destroy method
 	If you don't know the destroy method and want Tome to detect it automatically
 	Use `Tome.Guess` for the value.
+	
+	Will throw an error if the Tome is in the middle of being destroyed.
 	
 	Example(s):
 	```luau
@@ -1754,7 +1753,9 @@ function Tome:AddPromise(promise: Types.Promise) : Types.Promise -- any should b
 			self.__objects[typedPromise] = nil
 		end)
 		
-		return self:FastAdd(typedPromise, "cancel")
+		self.__objects[typedPromise] = "cancel"
+		
+		return typedPromise
 	end
 	
 	return throwError("The provided Promise has already finished executing.", "Ensure the provided Promise is still active.")
@@ -1766,12 +1767,11 @@ end
 	@param object<any>
 	@return object<any>
 	
-	New: The type of the parsed object will remain, meaning type annotations
-	will now be present even after internal addition.
+	Removes the object from the Tome (doesn't dispose of the object) it can be
+	added at a later time if needed.
 	
-	Removes an object from the Tome. The provided object will be become unreferenced
-	in the Tome and will be unable to be destroyed by the Tome. If the object is an
-	Instance, the tag the Tome uses will be removed from the object.
+	Objects that need to be disposed of should be passed through `Tome:DestroyObject`
+	or `Tome:DestroyTuple` for series of objects.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
@@ -1802,22 +1802,6 @@ function Tome:Remove<object>(object: object) : object
 		end
 	end
 	
-	self.__objects[object] = nil
-	
-	return object
-end
-
---[[
-	
-	@within Tome
-	@param object<any>
-	@return object<any>
-	
-	Removes an object from the Tome. Bypassing any checks. Generally this is only
-	used internally and shouldn't be used outside this scope.
-	
-]]
-function Tome:__remove<object>(object: object) : object
 	self.__objects[object] = nil
 	
 	return object
@@ -2134,12 +2118,12 @@ function Tome:Construct(class: any, ...: any) : any
 		local functionType: string = type(constructFunction)
 		
 		if functionType == "function" and constructFunction then
-			return self:Add(constructFunction(...))
+			return self:FastAdd(constructFunction(...))
 		end
 	end
 	
 	if classType == "function" then
-		return self:Add(class(...))
+		return self:FastAdd(class(...))
 	end
 	
 	throwError([[Attempted to construct a new class with Tome:Construct,

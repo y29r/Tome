@@ -175,7 +175,6 @@ export type Tome = {
 	
 	__findPage: (self: Tome, pageToFind: Tome) -> (Tome?, Tome?),
 	__getLastParent: (self: Tome) -> Tome?,
-	__remove: <object>(self: Tome, object: object) -> object,
 }
 
 return false
