@@ -2177,9 +2177,7 @@ function Tome:Duplicate() : Tome
 		UseParentMetaprops = self.__useParentMetaprops,
 	})
 	
-	for object: any, destroyMethod: any in self.__objects do
-		duplicateTome:Add(object, destroyMethod)
-	end
+	duplicateTome.__objects = table.clone(self.__objects)
 	
 	return duplicateTome
 end
