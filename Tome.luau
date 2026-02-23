@@ -1125,14 +1125,12 @@ end
 	```
 	
 ]]
-function Tome.RipPage(self: Tome, nameOrPage: string | Tome) : ()
-	local nameOrPageType: string = realTypeOf(nameOrPage)
-	assert(nameOrPageType == "string" or nameOrPageType == "Tome", "Expected argument #1 'nameOrPage' to be a string or Tome type.")
-	
+function Tome.RipPage(self: Tome, nameOrPage: string | Tome) : Tome
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "rip Page from the Tome"))
 	end
 	
+	local nameOrPageType: string = realTypeOf(nameOrPage)
 	if nameOrPageType == "Tome" then
 		local page: Tome?, parentPage: Tome? = self:__findPage(nameOrPage :: Tome)
 		if not page or not parentPage then
@@ -1146,17 +1144,21 @@ function Tome.RipPage(self: Tome, nameOrPage: string | Tome) : ()
 			parentPage.__pages[pageName] = nil
 		end
 	
-		return
+		return self
+	elseif nameOrPageType == "string" then
+		local page: Tome? = self.__pages[nameOrPage :: string]
+		if not page then
+			return throwError("Attempted to rip a Page that doesn't exist. Profiled using a string")
+		end
+		
+		self.__pages[nameOrPage :: string] = nil
+		
+		page:Destroy()
+		
+		return self
 	end
 	
-	local page: Tome? = self.__pages[nameOrPage :: string]
-	if not page then
-		return throwError("Attempted to rip a Page that doesn't exist. Profiled using a string")
-	end
-	
-	self.__pages[nameOrPage :: string] = nil
-	
-	page:Destroy()
+	return throwError("Expected argument #1 'nameOrPage' to be a string or Tome type.", "Only a string (name) or Page (Tome) can be passed in")
 end
 
 --[[

@@ -140,7 +140,7 @@ export type Tome = {
 	extend: (self: Tome, name: string?, metaprops: Metaprops?) -> Tome,
 	Extend: (self: Tome, name: string?, metaprops: Metaprops?) -> Tome,
 	
-	RipPage: (self: Tome, nameOrPage: string | Tome) -> (),
+	RipPage: (self: Tome, nameOrPage: string | Tome) -> Tome,
 	RipPages: (self: Tome) -> (),
 	
 	GetPage: (self: Tome, name: string) -> Tome?,
