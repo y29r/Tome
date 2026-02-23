@@ -40,7 +40,7 @@ An object-oriented garbage collection module for luau
 	- `Tome:GetParentTome` : Gets the parent Tome (if it has one)
 	- `Tome:GetTag` : Returns the internal tag the Tome uses to automatically remove destroyed instances via [Tagging](https://github.com/y29r/Tome/blob/main/README.md#tagging).
 	- `Tome:GivePage` : Moves a Page into another Tome.
-	- `Tome:HookRunServceSignal` : Connects to any of the RunService signals given a name and adds the connection into the Tome.
+	- `Tome:HookRunServiceSignal` : Connects to any of the RunService signals given a name and adds the connection into the Tome.
 	- `Tome:Instance` : Creates an Instance with `Instance.new` and adds it to the Tome.
 	- `Tome:IsDestroying` : Returns whether the Tome is currently in a destroying state.
 	- `Tome:Move` : Moves an object from the current Tome into another.
