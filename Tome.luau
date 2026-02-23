@@ -359,7 +359,7 @@ function Tome.new(metaprops: Types.Metaprops?) : Tome
 	local SPAWN_DESTROY: boolean? = metaprops and metaprops.SpawnDestroy
 	local USE_PARENT_METAPROPS: boolean? = metaprops and metaprops.UseParentMetaprops
 	
-	local self = setmetatable({
+	local self: Tome = setmetatable({
 		__fastAdd = if type(FAST_ADD) == "boolean" then FAST_ADD else DEFAULT_FAST_ADD,
 		__spawnDestroy = if type(SPAWN_DESTROY) == "boolean" then SPAWN_DESTROY else DEFAULT_SPAWN_DESTROY,
 		__warnings = if type(WARNINGS) == "boolean" then WARNINGS else DEFAULT_WARNINGS,
