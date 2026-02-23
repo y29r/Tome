@@ -250,7 +250,7 @@
 
 local Types: boolean = require("./Types")
 
-export type Tome = Types.Tome
+export type InternalTome = Types.InternalTome
 export type Metaprops = Types.Metaprops
 export type DestroyMethod = Types.DestroyMethod
 export type RunServiceSignalName = Types.RunServiceSignalName
@@ -300,20 +300,13 @@ Tome.Guess = GuessType
 
 Tome.VERSION = require("./VERSION")
 
--- Tome.__tostring = function(self: Tome)
--- 	local objects: {[any]: DestroyMethod} = self.__objects
-
--- 	local objectsPrint: string = ""
--- 	for object: any, destroyMethod: DestroyMethod in objects do
--- 		objectsPrint ..= typeof(object) .. "(" .. tostring(object) .. ")" .. ", "
--- 	end
-
--- 	return string.format([[
-
--- 		Tome(%*)
--- 		[Objects]: {%*}
--- 	]], self.__name or "Blank", objectsPrint)
--- end
+-- TODO: Find a better way to keep method docs while getting better types
+export type Tome = typeof(
+	setmetatable(
+		{} :: Types.InternalTome,
+		Tome
+	)
+)
 
 local DEFAULT_SPAWN_DESTROY: boolean = Static.SpawnDestroy
 local DEFAULT_FAST_ADD: boolean = Static.FastAdd
@@ -363,7 +356,7 @@ function Tome.new(metaprops: Types.Metaprops?) : Tome
 		__tomeTag = (TAGGING and HttpService:GenerateGUID(false)) or nil,
 		__tagRemovedConnection = nil,
 		__destroyCallbacks = {},
-	}, Tome) :: any
+	}, Tome)
 	
 	return self
 end
@@ -972,7 +965,7 @@ function Tome.AddPage(self: Tome, name: string?, metaprops: Types.Metaprops?) : 
 	
 	local keyNameToUse: string = name or HttpService:GenerateGUID(false)
 	
-	local page: Tome? = self.__pages[keyNameToUse]
+	local page: InternalTome? = self.__pages[keyNameToUse]
 	if page then
 		throwError("Attempted to add a Page that already exists with the given name.")
 	end
@@ -996,7 +989,7 @@ function Tome.AddPage(self: Tome, name: string?, metaprops: Types.Metaprops?) : 
 	
 	local newPage: Tome = Tome.new(newMetaprops)
 	newPage:Rename(name)
-	newPage.__parent = self :: Tome
+	newPage.__parent = self
 	
 	self.__pages[keyNameToUse] = newPage
 	
@@ -1072,13 +1065,12 @@ end
 	
 	This is an internal method that shouldn't be used outside this prototype.
 	
-]]
-function Tome.__getLastParent(self: Tome) : Tome?
+]]function Tome.__getLastParent(self: Tome) : Tome?
 	local parent: Tome? = self:GetParent()
 	if parent then
 		local lastParent: Tome? = nil
 		
-		while parent ~= nil do
+		while parent do
 			lastParent = parent
 			parent = parent.__parent
 		end
@@ -2265,99 +2257,96 @@ function Tome.Clone(self: Tome, object: any, extendFunctionName: string?) : any
 	error(string.format("Failed to clone object: %s", tostring(object)))
 end
 
-do
-	local FORMAT_STRING: string = "\n\tAttempted to set property '%s' to an Instance created by Tome.\n\tReason: %*"
+local INSTANCE_FORMAT_STRING: string = "\n\tAttempted to set property '%s' to an Instance created by Tome.\n\tReason: %*"
 	
-	--[[
-		
-		@within Tome
-		@param instanceName string
-		@param properties {[string]: any}?
-		@return Instance
-		
-		Creates an Instance from the provider instanceName argument. Note that that instantiation
-		is not invoked in protected mode. This means instantiation instances that do not exist
-		will throw an error
-		
-		Optionally you can pass in a properties dictionary ([property] = value) to set them after
-		instantiation. Properties that are invalid will be caught in protected mode, and will throw
-		a warning if Warnings is enabled within the Tome.
-		
-		Optionally you can also pass in a custom destroy method as the 3rd argument.
-		
-		Will throw an error if the Tome is in the middle of being destroyed.
-		
-		Example(s):
-		```luau
-		local Tome = require("../Path/To/Tome")
-		local newTome = Tome.new()
-		
-		local part = newTome:Instance("Part")
-		part.Parent = workspace
-		
-		task.wait(2)
-		
-		newTome:Destroy() -- Destroys the part
-		```
-		
-		```luau
-		local Tome = require("../Path/To/Tome")
-		local newTome = Tome.new()
-		
-		local part = newTome:Instance("Part", {
-			Color = Color3.new(1, 1, 1),
-			Size = Vector3.one,
-			Parent = workspace,
-		})
-		
-		task.wait(2)
-		
-		-- destroys the part
-		newTome:Destroy()
-		```
-		
-		```luau
-		local Tome = require("../Path/To/Tome")
-		local newTome = Tome.new()
-		
-		-- will throw an error as "Apple" isn't an actual instance type
-		newTome:Instance("Apple")
-		```
-		
-	]]
-	function Tome.Instance(self: Tome, instanceName: string, properties: {[string]: any}?, destroyMethod: DestroyMethod?) : any
-		assert(type(instanceName) == "string", "Expected argument #1 'instanceName' to be a string type.")
-		assert(type(properties) == "table" or properties == nil, "Expected argument #2 'properties' to be a table type, or nil.")
-		
-		if self:IsDestroying() then
-			error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "create an Instance"))
-		end
-		
-		local result: Instance = Instance.new(instanceName)
-		if not self.__fastAdd then
-			validateObject(result, self)
-		end
-		
-		if properties then
-			for property: string, value: any in properties do
-				xpcall(function()
-					(result :: any)[property] = value
-				end, function(issue: string)
-					if not self.__warnings then
-						return
-					end
-					
-					warn(string.format(FORMAT_STRING, tostring(property), issue))
-				end)
-			end
-		end
-		
-		self.__objects[result] = destroyMethod or "Destroy"
-		
-		return result
+--[[
+	
+	@within Tome
+	@param instanceName string
+	@param properties {[string]: any}?
+	@return Instance
+	
+	Creates an Instance from the provider instanceName argument. Note that that instantiation
+	is not invoked in protected mode. This means instantiation instances that do not exist
+	will throw an error
+	
+	Optionally you can pass in a properties dictionary ([property] = value) to set them after
+	instantiation. Properties that are invalid will be caught in protected mode, and will throw
+	a warning if Warnings is enabled within the Tome.
+	
+	Optionally you can also pass in a custom destroy method as the 3rd argument.
+	
+	Will throw an error if the Tome is in the middle of being destroyed.
+	
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local newTome = Tome.new()
+	
+	local part = newTome:Instance("Part")
+	part.Parent = workspace
+	
+	task.wait(2)
+	
+	newTome:Destroy() -- Destroys the part
+	```
+	
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local newTome = Tome.new()
+	
+	local part = newTome:Instance("Part", {
+		Color = Color3.new(1, 1, 1),
+		Size = Vector3.one,
+		Parent = workspace,
+	})
+	
+	task.wait(2)
+	
+	-- destroys the part
+	newTome:Destroy()
+	```
+	
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local newTome = Tome.new()
+	
+	-- will throw an error as "Apple" isn't an actual instance type
+	newTome:Instance("Apple")
+	```
+	
+]]
+function Tome.Instance(self: Tome, instanceName: string, properties: {[string]: any}?, destroyMethod: DestroyMethod?) : any
+	assert(type(instanceName) == "string", "Expected argument #1 'instanceName' to be a string type.")
+	assert(type(properties) == "table" or properties == nil, "Expected argument #2 'properties' to be a table type, or nil.")
+	
+	if self:IsDestroying() then
+		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "create an Instance"))
 	end
+	
+	local result: Instance = Instance.new(instanceName)
+	if not self.__fastAdd then
+		validateObject(result, self)
+	end
+	
+	if properties then
+		for property: string, value: any in properties do
+			xpcall(function()
+				(result :: any)[property] = value
+			end, function(issue: string)
+				if not self.__warnings then
+					return
+				end
+				
+				warn(string.format(INSTANCE_FORMAT_STRING, tostring(property), issue))
+			end)
+		end
+	end
+	
+	self.__objects[result] = destroyMethod or "Destroy"
+	
+	return result
 end
-
 
 --[[
 	
@@ -2431,7 +2420,7 @@ end
 	```
 	
 ]]
-function Tome.Attach(self: Tome, object: any) : (() -> ()) | RBXScriptConnection | Signal.Connection?
+function Tome.Attach(self: Tome, object: any) : Attachment?
 	local objectType: string = realTypeOf(object)
 	
 	if objectType == "Tome" then
@@ -2564,7 +2553,12 @@ function Tome.AttachTuple(self: Tome, ...: any) : (() -> (), {Attachment})
 	local attachments: {Attachment} = self:Table({})
 	
 	for index: number, object: any in {...} do
-		table.insert(attachments, self:Attach(object))
+		local attachment: Attachment? = self:Attach(object)
+		if not attachment then
+			continue
+		end
+		
+		table.insert(attachments, attachment)
 	end
 	
 	return function()
