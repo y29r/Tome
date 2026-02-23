@@ -803,7 +803,7 @@ end
 	Returns the same Tome to allow recursive invoking
 	
 ]]
-function Tome:SetTag(tag: string?) : Tome
+function Tome.SetTag(self: Tome, tag: string?) : Tome
 	assert(type(tag) == "string", "Expected argument #1 'tag' to be a string type, or nil.")
 	
 	local oldTag: string? = self:GetTag()
@@ -815,7 +815,9 @@ function Tome:SetTag(tag: string?) : Tome
 	end
 	
 	if not tag then
-		return self:__disconnectTagRemovedConnection()
+		self:__disconnectTagRemovedConnection()
+		
+		return self
 	end
 
 	self.__tomeTag = tag
@@ -832,7 +834,7 @@ end
 	internally, but this may come in helpful within the future.
 	
 ]]
-function Tome:GetTag() : string?
+function Tome.GetTag(self: Tome) : string?
 	return self.__tomeTag
 end
 
@@ -845,7 +847,7 @@ end
 	shouldn't be called outside this prototype.
 	
 ]]
-function Tome:__connectTagRemoved() : ()
+function Tome.__connectTagRemoved(self: Tome) : ()
 	local tagRemovedConnection: RBXScriptConnection? = self.__tagRemovedConnection
 	if tagRemovedConnection and tagRemovedConnection.Connected then
 		return
@@ -877,7 +879,7 @@ end
 	shouldn't be called outside this prototype.
 	
 ]]
-function Tome:__disconnectTagRemovedConnection() : ()
+function Tome.__disconnectTagRemovedConnection(self: Tome) : ()
 	local tagRemovedConnection: RBXScriptConnection? = self.__tagRemovedConnection
 	if tagRemovedConnection and tagRemovedConnection.Connected then
 		tagRemovedConnection:Disconnect()
@@ -899,7 +901,7 @@ end
 	other Tomes. Though useful for debugging.
 	
 ]]
-function Tome:Rename(name: string?) : Tome
+function Tome.Rename(self: Tome, name: string?) : Tome
 	assert(type(name) == "string" or name == nil, "Expected argument #1 'name' to be a string type, or nil.")
 	
 	self.__name = name
@@ -961,18 +963,16 @@ end
 	```
 	
 ]]
-function Tome:AddPage(name: string?, metaprops: Types.Metaprops?) : Tome
+function Tome.AddPage(self: Tome, name: string?, metaprops: Types.Metaprops?) : Tome
 	assert(type(name) == "string" or name == nil, "Expected argument #1 'name' to be a string type, or nil.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add a Page to the Tome"))
 	end
 	
-	if not name then
-		name = HttpService:GenerateGUID(false)
-	end
+	local keyNameToUse: string = name or HttpService:GenerateGUID(false)
 	
-	local page: Tome? = self.__pages[name]
+	local page: Tome? = self.__pages[keyNameToUse]
 	if page then
 		throwError("Attempted to add a Page that already exists with the given name.")
 	end
@@ -998,7 +998,7 @@ function Tome:AddPage(name: string?, metaprops: Types.Metaprops?) : Tome
 	newPage:Rename(name)
 	newPage.__parent = self :: Tome
 	
-	self.__pages[name] = newPage
+	self.__pages[keyNameToUse] = newPage
 	
 	return newPage
 end
@@ -1018,10 +1018,11 @@ Tome.Extend = Tome.AddPage
 	to acquire a Page instead.
 	
 ]]
-function Tome:__findPage(pageToFind: Tome) : (Tome?, Tome?)
+function Tome.__findPage(self: Tome, pageToFind: Tome) : (Tome?, Tome?)
+	-- TODO: Fix type issues once the new solver gets released
 	local subPages: {any} = {}
 	
-	for name: string, page: Tome in self.__pages do
+	for name: string, page: any in self.__pages do
 		if page == pageToFind then
 			return page, self
 		end
@@ -1058,7 +1059,7 @@ end
 	```
 	
 ]]
-function Tome:GetParent() : Tome?
+function Tome.GetParent(self: Tome) : Tome?
 	return self.__parent
 end
 
@@ -1072,7 +1073,7 @@ end
 	This is an internal method that shouldn't be used outside this prototype.
 	
 ]]
-function Tome:__getLastParent() : Tome?
+function Tome.__getLastParent(self: Tome) : Tome?
 	local parent: Tome? = self:GetParent()
 	if parent then
 		local lastParent: Tome? = nil
@@ -1124,7 +1125,7 @@ end
 	```
 	
 ]]
-function Tome:RipPage(nameOrPage: string | Tome) : ()
+function Tome.RipPage(self: Tome, nameOrPage: string | Tome) : ()
 	local nameOrPageType: string = realTypeOf(nameOrPage)
 	assert(nameOrPageType == "string" or nameOrPageType == "Tome", "Expected argument #1 'nameOrPage' to be a string or Tome type.")
 	
@@ -1133,7 +1134,7 @@ function Tome:RipPage(nameOrPage: string | Tome) : ()
 	end
 	
 	if nameOrPageType == "Tome" then
-		local page: Tome?, parentPage: Tome? = self:__findPage(nameOrPage)
+		local page: Tome?, parentPage: Tome? = self:__findPage(nameOrPage :: Tome)
 		if not page or not parentPage then
 			return throwError("Attempted to rip a Page that doesn't exist. Profiled using recursion")
 		end
@@ -1144,16 +1145,16 @@ function Tome:RipPage(nameOrPage: string | Tome) : ()
 		if pageName then
 			parentPage.__pages[pageName] = nil
 		end
-		
+	
 		return
 	end
 	
-	local page: Tome? = self.__pages[nameOrPage]
+	local page: Tome? = self.__pages[nameOrPage :: string]
 	if not page then
 		return throwError("Attempted to rip a Page that doesn't exist. Profiled using a string")
 	end
 	
-	self.__pages[nameOrPage] = nil
+	self.__pages[nameOrPage :: string] = nil
 	
 	page:Destroy()
 end
@@ -1180,7 +1181,7 @@ end
 	```
 	
 ]]
-function Tome:RipPages() : ()
+function Tome.RipPages(self: Tome) : ()
 	self:DestroyAllPages()
 	
 	table.clear(self.__pages)
@@ -1211,7 +1212,7 @@ end
 	```
 
 ]]
-function Tome:GetPage(name: string) : Tome?
+function Tome.GetPage(self: Tome, name: string) : Tome?
 	assert(type(name) == "string", "Expected argument #1 'name' to be a string type.")
 	
 	return self.__pages[name]
@@ -1252,7 +1253,7 @@ end
 	```
 
 ]]
-function Tome:Parent(newTome: Tome?) : Tome
+function Tome.Parent(self: Tome, newTome: Tome?) : Tome
 	local isTome: boolean = realTypeOf(newTome) == "Tome"
 	assert(isTome or newTome == nil, "Expected argument #1 'newTome' to be a Tome type, or nil.")
 	
@@ -1264,15 +1265,20 @@ function Tome:Parent(newTome: Tome?) : Tome
 		throwError("Cannot add the current Tome to the newTome because the new Tome is in the middle of being destroyed.", "Ensure the new Tome is not destroying with Tome:IsDestroying.")
 	end
 	
+	local name: string? = self.__name
+	if not name then
+		return self
+	end
+	
 	local parent: Tome? = self.__parent
 	if parent then
 		self.__parent = nil
 		
-		parent.__pages[self.__name] = nil
+		parent.__pages[name] = nil
 	end
 	
 	if newTome then
-		newTome.__pages[self.__name] = self
+		newTome.__pages[name] = self
 		
 		self.__parent = newTome
 	end
@@ -1305,7 +1311,7 @@ end
 	```
 
 ]]
-function Tome:GivePage(pageName: string, newTome: Tome) : ()
+function Tome.GivePage(self: Tome, pageName: string, newTome: Tome) : ()
 	assert(type(pageName) == "string", "Expected argument #1 to be a string type.")
 	assert(realTypeOf(newTome) == "Tome", "Expected argument #2 to be a Tome type.")
 	
@@ -1351,7 +1357,7 @@ end
 	```
 	
 ]]
-function Tome:Move<object>(object: object, otherTome: Tome) : object
+function Tome.Move<object>(self: Tome, object: object, otherTome: Tome) : object
 	assert(realTypeOf(otherTome) == "Tome", "Expected argument #2 'otherTome' to be a Tome type.")
 	
 	if self:IsDestroying() then
@@ -1486,7 +1492,7 @@ end
 	```
 	
 ]]
-function Tome:Add<object>(object: object, destroyMethod: Types.DestroyMethod?) : object
+function Tome.Add<object>(self: Tome, object: object, destroyMethod: Types.DestroyMethod?) : object
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add an object"))
 	end
@@ -1526,7 +1532,7 @@ end
 	```
 	
 ]]
-function Tome:AddFromDictionary(dictionary: ObjectDictionary) : ObjectDictionary
+function Tome.AddFromDictionary(self: Tome, dictionary: ObjectDictionary) : ObjectDictionary
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add dictionary of objects"))
 	end
@@ -1582,7 +1588,7 @@ end
 	```
 	
 ]]
-function Tome:AddWithMiddleware<object>(object: object, middleware: (object: object, complete: () -> ()) -> (), destroyMethod: Types.DestroyMethod?) : object
+function Tome.AddWithMiddleware<object>(self: Tome, object: object, middleware: (object: object, complete: () -> ()) -> (), destroyMethod: Types.DestroyMethod?) : object
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add with middleware to the Tome"))
 	end
@@ -1614,7 +1620,7 @@ end
 	it's safe to use.
 	
 ]]
-function Tome:FastAdd<object>(object: object, destroyMethod: Types.DestroyMethod?) : object
+function Tome.FastAdd<object>(self: Tome, object: object, destroyMethod: Types.DestroyMethod?) : object
 	self.__objects[object] = destroyMethod or getDestroyMethodForObject(object)
 	
 	return object
@@ -1647,7 +1653,7 @@ end
 	```
 	
 ]]
-function Tome:AddTuple<object...>(...) : object...
+function Tome.AddTuple<object...>(self: Tome, ...) : object...
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add tuple objects to the Tome"))
 	end
@@ -1694,7 +1700,7 @@ end
 	```
 	
 ]]
-function Tome:AddFromArray<objectsArray>(objectsArray: objectsArray) : objectsArray
+function Tome.AddFromArray<objectsArray>(self: Tome, objectsArray: objectsArray) : objectsArray
 	assert(type(objectsArray) == "table", "Expected argument #1 'objectsArray' to be a table type.")
 	
 	if self:IsDestroying() then
@@ -1730,7 +1736,7 @@ end
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
 ]]
-function Tome:AddPromise(promise: Types.Promise) : Types.Promise -- any should be considered a Promise, for better auto complete make sure to type cast (promise :: Promise)
+function Tome.AddPromise(self: Tome, promise: Types.Promise) : Types.Promise -- any should be considered a Promise, for better auto complete make sure to type cast (promise :: Promise)
 	assert(promise
 		and type(promise) == "table"
 		and type(promise.getStatus) == "function"
@@ -1790,7 +1796,7 @@ end
 	```
 	
 ]]
-function Tome:Remove<object>(object: object) : object
+function Tome.Remove<object>(self: Tome, object: object) : object
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "remove an object"))
 	end
@@ -1836,7 +1842,7 @@ end
 	```
 	
 ]]
-function Tome:RemoveTuple<object...>(...) : object...
+function Tome.RemoveTuple<object...>(self: Tome, ...) : object...
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "remove tuple objects"))
 	end
@@ -1880,7 +1886,7 @@ end
 	```
 	
 ]]
-function Tome:RemoveFromArray<objectsArray>(objectsArray: objectsArray) : objectsArray
+function Tome.RemoveFromArray<objectsArray>(self: Tome, objectsArray: objectsArray) : objectsArray
 	assert(type(objectsArray) == "table", "Expected argument #1 'objectsArray' to be a table type.")
 	
 	if self:IsDestroying() then
@@ -1921,7 +1927,7 @@ end
 	```
 	
 ]]
-function Tome:RemoveObjectsWithTag(tag: string) : ()
+function Tome.RemoveObjectsWithTag(self: Tome, tag: string) : ()
 	assert(type(tag) == "string", "Expected argument #1 'tag' to be a string type.")
 	
 	if self:IsDestroying() then
@@ -1964,7 +1970,7 @@ end
 	```
 	
 ]]
-function Tome:RemoveObjectsOfType(typeName: string) : ()
+function Tome.RemoveObjectsOfType(self: Tome, typeName: string) : ()
 	assert(type(typeName) == "string", "Expected argument #1 to be a string type.")
 	
 	if self:IsDestroying() then
@@ -2009,7 +2015,7 @@ end
 	```
 	
 ]]
-function Tome:Connect(signal: any, listener: (...any) -> ...any) : any
+function Tome.Connect(self: Tome, signal: any, listener: (...any) -> ...any) : any
 	if self:IsDestroying() then
 		throwError(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "connect to a signal"))
 	end
@@ -2052,7 +2058,7 @@ end
 	```
 	
 ]]
-function Tome:Once(signal: RBXScriptSignal, listener: (...any) -> (...any)) : any
+function Tome.Once(self: Tome, signal: RBXScriptSignal, listener: (...any) -> (...any)) : any
 	if self:IsDestroying() then
 		throwError(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "connect once to a signal"))
 	end
@@ -2107,7 +2113,7 @@ end
 	```
 	
 ]]
-function Tome:Construct(class: any, ...: any) : any
+function Tome.Construct(self: Tome, class: any, ...: any) : any
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "construct a class"))
 	end
@@ -2118,7 +2124,7 @@ function Tome:Construct(class: any, ...: any) : any
 		local functionType: string = type(constructFunction)
 		
 		if functionType == "function" and constructFunction then
-			return self:FastAdd(constructFunction(...))
+			return self:FastAdd(constructFunction(...), nil)
 		end
 	end
 	
@@ -2164,7 +2170,7 @@ end
 	```
 	
 ]]
-function Tome:Duplicate() : Tome
+function Tome.Duplicate(self: Tome) : Tome
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "duplicate the Tome"))
 	end
@@ -2223,7 +2229,7 @@ end
 	```
 	
 ]]
-function Tome:Clone(object: any, extendFunctionName: string?) : any
+function Tome.Clone(self: Tome, object: any, extendFunctionName: string?) : any
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "clone an object"))
 	end
@@ -2317,7 +2323,7 @@ do
 		```
 		
 	]]
-	function Tome:Instance(instanceName: string, properties: {[string]: any}?, destroyMethod: DestroyMethod?) : any
+	function Tome.Instance(self: Tome, instanceName: string, properties: {[string]: any}?, destroyMethod: DestroyMethod?) : any
 		assert(type(instanceName) == "string", "Expected argument #1 'instanceName' to be a string type.")
 		assert(type(properties) == "table" or properties == nil, "Expected argument #2 'properties' to be a table type, or nil.")
 		
@@ -2368,7 +2374,7 @@ end
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
 ]]
-function Tome:FromExisting(instance: Instance, destroyMethod: DestroyMethod?) : any
+function Tome.FromExisting(self: Tome, instance: Instance, destroyMethod: DestroyMethod?) : any
 	assert(typeof(instance) == "Instance", "Expected argument #1 'instance' to be an Instance type.")
 	
 	if self:IsDestroying() then
@@ -2423,7 +2429,7 @@ end
 	```
 	
 ]]
-function Tome:Attach(object: any) : (() -> ()) | RBXScriptConnection | Signal.Connection?
+function Tome.Attach(self: Tome, object: any) : (() -> ()) | RBXScriptConnection | Signal.Connection?
 	local objectType: string = realTypeOf(object)
 	
 	if objectType == "Tome" then
@@ -2552,7 +2558,7 @@ end
 	```
 	
 ]]
-function Tome:AttachTuple(...: any) : (() -> (), {Attachment})
+function Tome.AttachTuple(self: Tome, ...: any) : (() -> (), {Attachment})
 	local attachments: {Attachment} = self:Table({})
 	
 	for index: number, object: any in {...} do
@@ -2603,7 +2609,7 @@ end
 	```
 	
 ]]
-function Tome:DestroyObjectsWithTag(tag: string) : ()
+function Tome.DestroyObjectsWithTag(self: Tome, tag: string) : ()
 	assert(type(tag) == "string", "Expected argument #1 'tag' to be a string type.")
 	
 	if self:IsDestroying() then
@@ -2642,7 +2648,7 @@ end
 	```
 	
 ]]
-function Tome:DestroyObjectsOfType(typeName: string) : ()
+function Tome.DestroyObjectsOfType(self: Tome, typeName: string) : ()
 	assert(type(typeName) == "string", "Expected argument #1 'typeName' to be a string type.")
 	
 	if self:IsDestroying() then
@@ -2680,7 +2686,7 @@ end
 	```
 
 ]]
-function Tome:HookRunServiceSignal(signalName: RunServiceSignalName, listener: (deltaTime: number) -> () | (time: number, deltaTime: number) -> ()) : RBXScriptConnection
+function Tome.HookRunServiceSignal(self: Tome, signalName: RunServiceSignalName, listener: (deltaTime: number) -> () | (time: number, deltaTime: number) -> ()) : RBXScriptConnection
 	assert(type(signalName) == "string", "Expected argument #1 'signalName' to be a string type.")
 	assert(type(listener) == "function", "Expected argument #2 'listener' to be a function type.")
 	
@@ -2725,7 +2731,7 @@ end
 	```
 	
 ]]
-function Tome:BindRenderStepped(name: string, renderPriority: number?, listener: (deltaTime: number) -> ()) : () -> ()
+function Tome.BindRenderStepped(self: Tome, name: string, renderPriority: number?, listener: (deltaTime: number) -> ()) : () -> ()
 	assert(type(name) == "string", "Expected argument #1 'name' to be a number type.")
 	assert(type(renderPriority) == "number" or renderPriority == nil, "Expected argument #2 'renderPriority' to be a number type, or nil.")
 	assert(type(listener) == "function", "Expected argument #3 'listener' to be a function type.")
@@ -2772,7 +2778,7 @@ end
 	```
 	
 ]]
-function Tome:UnbindRenderStepped(name: string) : ()
+function Tome.UnbindRenderStepped(self: Tome, name: string) : ()
 	assert(type(name) == "string", "Expected argument #1 'name' to be a string type.")
 	
 	RunService:UnbindFromRenderStep(name)
@@ -2806,7 +2812,7 @@ end
 	```
 	
 ]]
-function Tome:Delay<vargs>(duration: number, listener: (...vargs) -> ...any, ...: vargs) : thread
+function Tome.Delay<vargs>(self: Tome, duration: number, listener: (...vargs) -> ...any, ...: vargs) : thread
 	assert(type(duration) == "number", "Expected argument #1 'duration' to be a number type.")
 	assert(type(listener) == "function", "Expected argument #2 'listener' to be a function type.")
 	
@@ -2855,7 +2861,7 @@ end
 	```
 	
 ]]
-function Tome:Spawn<vargs>(listener: (...vargs) -> ...any, ...: vargs) : thread
+function Tome.Spawn<vargs>(self: Tome, listener: (...vargs) -> ...any, ...: vargs) : thread
 	assert(type(listener) == "function", "Expected argument #1 'listener' to be a function type.")
 	
 	if self:IsDestroying() then
@@ -2884,7 +2890,7 @@ end
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
 ]]
-function Tome:Defer<vargs>(listener: (...vargs) -> ...any, ...: vargs) : thread
+function Tome.Defer<vargs>(self: Tome, listener: (...vargs) -> ...any, ...: vargs) : thread
 	assert(type(listener) == "function", "Expected argument #1 'listener' to be a function type.")
 	
 	if self:IsDestroying() then
@@ -2923,7 +2929,7 @@ end
 	```
 
 ]]
-function Tome:Yield(thread: thread?) : ()
+function Tome.Yield(self: Tome, thread: thread?) : ()
 	local currentThread: thread = thread or coroutine.running()
 	
 	self.__objects[currentThread] = coroutine.resume
@@ -2957,7 +2963,7 @@ end
 	```
 	
 ]]
-function Tome:Contains(object: any) : boolean
+function Tome.Contains(self: Tome, object: any) : boolean
 	return self.__objects[object] ~= nil
 end
 
@@ -2992,7 +2998,7 @@ Tome.Has = Tome.Contains
 	```
 	
 ]]
-function Tome:Signal() : Signal.Signal
+function Tome.Signal(self: Tome) : Signal.Signal
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "construct a Signal"))
 	end
@@ -3028,7 +3034,7 @@ end
 	```
 	
 ]]
-function Tome:Table(existing: {[any]: any}?) : {[any]: any}
+function Tome.Table(self: Tome, existing: {[any]: any}?) : {[any]: any}
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add a table"))
 	end
@@ -3074,7 +3080,8 @@ end
 	```
 
 ]]
-function Tome:Tween(
+function Tome.Tween(
+	self: Tome,
 	instance: Instance,
 	tweenInfo: TweenInfo,
 	propertyTable: {[string]: any},
@@ -3153,7 +3160,7 @@ end
 	```
 	
 ]]
-function Tome:DestroyObject(object: any) : boolean
+function Tome.DestroyObject(self: Tome, object: any) : boolean
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "destroy object"))
 	end
@@ -3198,7 +3205,7 @@ end
 	```
 	
 ]]
-function Tome:DestroyTuple(...: any) : ()
+function Tome.DestroyTuple(self: Tome, ...: any) : ()
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "destroy objects"))
 	end
@@ -3237,7 +3244,7 @@ end
 	```
 	
 ]]
-function Tome:CanDestroy() : boolean
+function Tome.CanDestroy(self: Tome) : boolean
 	return not self.__destroying
 end
 
@@ -3260,7 +3267,7 @@ end
 	```
 	
 ]]
-function Tome:IsDestroying() : boolean
+function Tome.IsDestroying(self: Tome) : boolean
 	return self.__destroying
 end
 
@@ -3282,7 +3289,7 @@ end
 	```
 	
 ]]
-function Tome:GetObjects() : {[any]: DestroyMethod}
+function Tome.GetObjects(self: Tome) : {[any]: DestroyMethod}
 	return self.__objects
 end
 
@@ -3303,7 +3310,7 @@ end
 	```
 	
 ]]
-function Tome:Count() : number
+function Tome.Count(self: Tome) : number
 	local count: number = 0
 	
 	local objects: {[any]: DestroyMethod} = self.__objects
@@ -3351,7 +3358,7 @@ end
 	```
 	
 ]]
-function Tome:GetObjectsOfType(typeName: string) : {any}
+function Tome.GetObjectsOfType(self: Tome, typeName: string) : {any}
 	assert(type(typeName) == "string", "Expected argument #1 'typeName' to be a string type.")
 	
 	local objects: {[any]: DestroyMethod} = self.__objects
@@ -3395,7 +3402,7 @@ end
 	```
 
 ]]
-function Tome:GetObjectsWithTag(tag: string) : {Instance}
+function Tome.GetObjectsWithTag(self: Tome, tag: string) : {Instance}
 	assert(type(tag) == "string", "Expected argument #1 'tag' to be a string type.")
 	
 	local objects: {[any]: DestroyMethod} = self.__objects
@@ -3437,7 +3444,7 @@ end
 	```
 	
 ]]
-function Tome:DestroyAllObjects(__ignoreDestroyingProperty: boolean?) : ()
+function Tome.DestroyAllObjects(self: Tome, __ignoreDestroyingProperty: boolean?) : ()
 	if self:IsDestroying() and not __ignoreDestroyingProperty then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "destroy all objects"))
 	end
@@ -3496,12 +3503,13 @@ end
 
 	```
 ]]
-function Tome:DestroyAllPages(__ignoreDestroyingProperty: boolean?) : ()
+function Tome.DestroyAllPages(self: Tome, __ignoreDestroyingProperty: boolean?) : ()
 	if self:IsDestroying() and not __ignoreDestroyingProperty then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "destroy all Pages"))
 	end
 	
-	for pageName: string, page: Tome in self.__pages do
+	-- TODO: Fix type issue when new solver gets released
+	for pageName: string, page: any in self.__pages do
 		page:Destroy()
 	end
 end
@@ -3543,7 +3551,7 @@ end
 	```
 	
 ]]
-function Tome:DelayDestroy(duration: number) : thread
+function Tome.DelayDestroy(self: Tome, duration: number) : thread
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "delay destroy the Tome"))
 	end
@@ -3572,7 +3580,7 @@ end
 	```
 	
 ]]
-function Tome:WrapDestroy() : () -> ()
+function Tome.WrapDestroy(self: Tome) : () -> ()
 	return function()
 		self:Destroy()
 	end
@@ -3628,7 +3636,7 @@ end
 	```
 	
 ]]
-function Tome:OnDestroy(callback: (...any) -> (), onDestroyParams: OnDestroyParams?) : () -> ()
+function Tome.OnDestroy(self: Tome, callback: (...any) -> (), onDestroyParams: OnDestroyParams?) : () -> ()
 	assert(type(callback) == "function", "Expected argument #1 'callback' to be a function type.")
 	assert(type(onDestroyParams) == "table", "Expected argument #2 'onDestroyParams' to be a table type.")
 	
@@ -3684,7 +3692,7 @@ end
 	```
 	
 ]]
-function Tome:Destroy(...: any) : ()
+function Tome.Destroy(self: Tome, ...: any) : ()
 	if self:IsDestroying() then
 		error(string.format([[
 			%s.

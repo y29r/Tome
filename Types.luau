@@ -66,7 +66,7 @@ export type Tome = {
 	__warnings: boolean,
 	__tagging: boolean,
 	
-	__pages: {[string?]: Tome},
+	__pages: {[string]: Tome},
 	__objects: {[any]: DestroyMethod},
 	
 	__destroying: boolean,
@@ -75,7 +75,7 @@ export type Tome = {
 	__tomeTag: string?,
 	__useParentMetaprops: boolean,
 	__tagRemovedConnection: RBXScriptConnection?,
-	__destroyCallbacks: {[number]: (() -> ())},
+	__destroyCallbacks: {[number]: OnDestroyCallbackData},
 	
 	new: (metaprops: Metaprops?) -> Tome,
 	
