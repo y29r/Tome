@@ -60,25 +60,23 @@ export type Metaprops = {
 
 export type ObjectDictionary = {[any]: DestroyMethod | {name: string}}
 
-export type InternalTome = {
+export type Tome = {
 	__fastAdd: boolean,
 	__spawnDestroy: boolean,
 	__warnings: boolean,
 	__tagging: boolean,
 	
-	__pages: {[string]: any},
+	__pages: {[string]: Tome},
 	__objects: {[any]: DestroyMethod},
 	
 	__destroying: boolean,
 	__name: string?,
-	__parent: any?,
+	__parent: Tome?,
 	__tomeTag: string?,
 	__useParentMetaprops: boolean,
 	__tagRemovedConnection: RBXScriptConnection?,
 	__destroyCallbacks: {[number]: OnDestroyCallbackData},
-}
-
-export type Tome = InternalTome & {
+	
 	new: (metaprops: Metaprops?) -> Tome,
 	
 	Is: (object: any) -> boolean,

@@ -250,7 +250,6 @@
 
 local Types: boolean = require("./Types")
 
-export type InternalTome = Types.InternalTome
 export type Metaprops = Types.Metaprops
 export type DestroyMethod = Types.DestroyMethod
 export type RunServiceSignalName = Types.RunServiceSignalName
@@ -303,10 +302,28 @@ Tome.VERSION = require("./VERSION")
 -- TODO: Find a better way to keep method docs while getting better types
 export type Tome = typeof(
 	setmetatable(
-		{} :: Types.InternalTome,
+		{} :: InternalTome,
 		Tome
 	)
 )
+
+export type InternalTome = {
+	__fastAdd: boolean,
+	__spawnDestroy: boolean,
+	__warnings: boolean,
+	__tagging: boolean,
+	
+	__pages: {[string]: Tome},
+	__objects: {[any]: DestroyMethod},
+	
+	__destroying: boolean,
+	__name: string?,
+	__parent: Tome?,
+	__tomeTag: string?,
+	__useParentMetaprops: boolean,
+	__tagRemovedConnection: RBXScriptConnection?,
+	__destroyCallbacks: {[number]: OnDestroyCallbackData},
+}
 
 local DEFAULT_SPAWN_DESTROY: boolean = Static.SpawnDestroy
 local DEFAULT_FAST_ADD: boolean = Static.FastAdd
@@ -965,7 +982,7 @@ function Tome.AddPage(self: Tome, name: string?, metaprops: Types.Metaprops?) : 
 	
 	local keyNameToUse: string = name or HttpService:GenerateGUID(false)
 	
-	local page: InternalTome? = self.__pages[keyNameToUse]
+	local page: Tome? = self.__pages[keyNameToUse]
 	if page then
 		throwError("Attempted to add a Page that already exists with the given name.")
 	end
