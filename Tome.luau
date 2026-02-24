@@ -671,6 +671,12 @@ Tome.Schedular = Schedular
 function Tome.schedule<object>(object: object, lifeTime: number, destroyMethod: DestroyMethod?) : object
 	assert(type(lifeTime) == "number", "Expected argument #2 lifeTime to be a number type")
 	
+	if lifeTime <= 0 then
+		destroyObject(object, destroyMethod or getDestroyMethodForObject(object))
+		
+		return object
+	end
+	
 	if not Schedular.isSchedularRunning() then
 		Schedular.startSchedular()
 	end
