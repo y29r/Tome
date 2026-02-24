@@ -1076,26 +1076,26 @@ end
 --[[
 	
 	@within Tome
-	@return Tome
+	@return Tome?
 	
 	Returns the highest ancestor of a chain of Tomes
 	
 	This is an internal method that shouldn't be used outside this prototype.
 	
-]]function Tome.__getLastParent(self: Tome) : Tome?
-	local parent: Tome? = self:GetParent()
-	if parent then
-		local lastParent: Tome? = nil
-		
-		while parent do
-			lastParent = parent
-			parent = parent.__parent
+]]
+function Tome.__getLastParent(self: Tome) : Tome?
+	local latestParent: Tome? = self.__parent
+	
+	while latestParent do
+		local parent: Tome? = latestParent.__parent
+		if not parent then
+			return latestParent
 		end
 		
-		return lastParent or parent
+		latestParent = parent
 	end
 	
-	return
+	return latestParent
 end
 
 --[[
