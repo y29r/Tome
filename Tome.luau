@@ -3742,4 +3742,31 @@ function Tome.Destroy(self: Tome, ...: any) : ()
 	end
 end
 
+--[[
+	
+	@within Tome
+	@return void
+	
+	Metamethod for Tome.
+	
+	Allows the Tome to be destroyed when calling the table. Slightly slower than
+	manually calling Tome:Destroy, but useful in environments where functions are
+	required for clean up.
+	
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local newTome = Tome.new()
+	
+	newTome:Add(function()
+		print("Tome destroyed")
+	end)
+	
+	newTome() -- destroys the Tome, calling the function above
+	```
+	
+]]
+function Tome.__call(self: any, ...: any) : () -- TODO: Replace 'any' with 'Tome' once the new solver is released
+	self:Destroy(...)
+end
+
 return Tome
