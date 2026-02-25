@@ -3657,7 +3657,7 @@ end
 ]]
 function Tome.OnDestroy(self: Tome, callback: (...any) -> (), onDestroyParams: OnDestroyParams?) : () -> ()
 	assert(type(callback) == "function", "Expected argument #1 'callback' to be a function type.")
-	assert(type(onDestroyParams) == "table", "Expected argument #2 'onDestroyParams' to be a table type.")
+	assert(type(onDestroyParams) == "table" or onDestroyParams == nil, "Expected argument #2 'onDestroyParams' to be a table type, or nil.")
 	
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "attach a destroy callback"))
