@@ -10,7 +10,7 @@ export type DestroyMethod = (
 	"cancel" |
 	"Disconnect" |
 	string
-) | {}
+) | {[any]: any}
 
 export type Attachment = RBXScriptConnection | SignalTypes.Connection | () -> ()
 

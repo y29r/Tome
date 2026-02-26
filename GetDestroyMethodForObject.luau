@@ -37,6 +37,11 @@ return function(object: any) : any
 			return "Disconnect"
 		elseif type(object.destroy) == "function" then
 			return "destroy"
+		else
+			local metatable: {[string]: any} = getmetatable(object)
+			if metatable and metatable.__call then
+				return metatable.__call
+			end
 		end
 	end
 	

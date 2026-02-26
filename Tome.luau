@@ -651,6 +651,37 @@ Tome.Schedular = Schedular
 
 --[[
 	
+	@param self Group<any>
+	@return void
+	
+	Destroys a group by iterating through it, finding destroy methods
+	for every object and then destroying those same objects.
+	
+	Used internally by Tome to clean up scheduled groups.
+	
+]]
+local function destroyGroup(self: any) : ()
+	for index: number = 1, #self do
+		local object: any = self[index]
+		
+		destroyObject(object, getDestroyMethodForObject(object))
+	end
+end
+
+type GroupMetamethods = {
+	__call: (self: any) -> (),
+}
+
+local GROUP_METAMETHODS: GroupMetamethods = {
+	__call = destroyGroup,
+}
+
+export type Group<Tuple> = typeof(
+	setmetatable({} :: {Tuple}, GROUP_METAMETHODS)
+)
+
+--[[
+	
 	@within Tome
 	@param object any
 	@param lifeTime number
@@ -690,14 +721,6 @@ function Tome.schedule<object>(object: object, lifeTime: number, destroyMethod: 
 	
 	if not Schedular.isSchedularRunning() then
 		Schedular.startSchedular()
-	end
-	
-	if type(object) == "table" and object.__TOME_OBJECT_GROUP__ then
-		for index: number, tupleObject: any in object.Tuple do
-			Tome.schedule(tupleObject, lifeTime)
-		end
-		
-		return object
 	end
 	
 	local currentTime: number = os.clock()
@@ -741,24 +764,24 @@ end
 	@param ... T
 	@return {...T}
 	
-	Groups a given tuple of objects into a table, attaching a unique key to use
-	across Tome.
+	Groups tuple objects into a table with an internal metatable attached.
+	The metatable is complementary to `Tome.schedule` to allow for multiple
+	objects to be scheduled under a single entry, rather than multiple.
 	
 	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
 	
-	local group: {any} = Tome.group(workspace.Part, workspace.Part2)
+	local group: {Part} = Tome.group(workspace.Part, workspace.Part2)
 	
 	Tome.schedule(group, 2.0)
 	```
 	
 ]]
-function Tome.group<T>(...: T) : {__TOME_OBJECT_GROUP__: boolean, Tuple: {T}}
-	return {
-		__TOME_OBJECT_GROUP__ = true,
-		Tuple = {...},
-	}
+function Tome.group<Tuple>(...: Tuple) : Group<Tuple>
+	return setmetatable({
+		...
+	}, GROUP_METAMETHODS)
 end
 
 --[[
@@ -769,29 +792,20 @@ end
 	Unschedules the provided object if it exists within the schedular.
 	Removing the object doesn't clean up the object.
 	
-	If a group from `Tome.group` is provided all the objects within the group
-	will be unscheduled.
-	
 	```luau
 	local Tome = require("../Path/To/Tome")
 	
-	-- add all the parts to the schedular
-	Tome.schedule(Tome.group(workspace.Part, workspace.Part2, workspace.Part3), 2)
+	local part: Part = workspace.Part
 	
-	-- now remove a couple of parts and be left with one
-	Tome.unschedule(Tome.group(workspace.Part, workspace.Part2))
+	Tome.schedule(part, 3.0) --> schedules to destroy the part after 3 seconds
+	
+	task.wait(1)
+	
+	Tome.unschedule(part) -- change our mind about destroying it, removing it from the schedular
 	```
 	
 ]]
 function Tome.unschedule<object>(object: object) : object
-	if type(object) == "table" and object.__TOME_OBJECT_GROUP__ then
-		for index: number, tupleObject: any in object.Tuple do
-			Tome.unschedule(tupleObject)
-		end
-		
-		return object
-	end
-	
 	local existingObjectIndex: number? = objectToIndexMap[object]
 	if not existingObjectIndex then
 		return object
