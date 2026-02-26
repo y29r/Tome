@@ -105,7 +105,7 @@ export type Tome = {
 	AttachTuple: (self: Tome, ...any) -> (() -> (), {Attachment}),
 	
 	HookRunServiceSignal: (self: Tome, signalName: RunServiceSignalName, listener: (deltaTime: number) -> () | (time: number, deltaTime: number) -> ()) -> RBXScriptConnection,
-	BindRenderStepped: (self: Tome, name: string, renderPriority: number?, listener: (deltaTime: number) -> ()) -> () -> (),
+	BindRenderStepped: (self: Tome, name: string, renderPriority: number?, listener: (deltaTime: number) -> ()) -> any,
 	UnbindRenderStepped: (self: Tome, name: string) -> (),
 	
 	Delay: <vargs>(self: Tome, duration: number, listener: (...vargs) -> ...any, ...vargs) -> thread,

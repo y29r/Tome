@@ -260,6 +260,17 @@ export type ObjectDictionary = Types.ObjectDictionary
 export type Attachment = Types.Attachment
 export type ScheduledObjectEntry = Types.ScheduledObjectEntry
 
+export type RenderStepBinding = {
+	name: string,
+	owner: Tome,
+}
+
+export type CallableRenderStepBinding = typeof(
+	setmetatable({} :: RenderStepBinding, {} :: {
+		__call: (self: any) -> (),
+	})
+)
+
 local RunService: RunService = game:GetService("RunService")
 local HttpService: HttpService = game:GetService("HttpService")
 local TweenService: TweenService = game:GetService("TweenService")
@@ -2714,6 +2725,14 @@ function Tome.HookRunServiceSignal(self: Tome, signalName: RunServiceSignalName,
 	return self:Connect(signal, listener)
 end
 
+local RENDER_STEP_METAMETHODS = {
+	__call = function(self: RenderStepBinding)
+		RunService:UnbindFromRenderStep(self.name)
+		
+		self.owner.__objects[self] = nil
+	end
+}
+
 --[[
 	
 	@within Tome
@@ -2750,7 +2769,7 @@ end
 	```
 	
 ]]
-function Tome.BindRenderStepped(self: Tome, name: string, renderPriority: number?, listener: (deltaTime: number) -> ()) : () -> ()
+function Tome.BindRenderStepped(self: Tome, name: string, renderPriority: number?, listener: (deltaTime: number) -> ()) : CallableRenderStepBinding
 	assert(type(name) == "string", "Expected argument #1 'name' to be a number type.")
 	assert(type(renderPriority) == "number" or renderPriority == nil, "Expected argument #2 'renderPriority' to be a number type, or nil.")
 	assert(type(listener) == "function", "Expected argument #3 'listener' to be a function type.")
@@ -2761,13 +2780,18 @@ function Tome.BindRenderStepped(self: Tome, name: string, renderPriority: number
 	
 	RunService:BindToRenderStep(name, renderPriority or 1, listener)
 	
-	local function unbindRenderStepFunction() : ()
-		self.__objects[unbindRenderStepFunction] = nil
-		
-		RunService:UnbindFromRenderStep(name)
+	local object: RenderStepBinding = {
+		name = name,
+		owner = self,
+	}
+	
+	setmetatable(object, RENDER_STEP_METAMETHODS)
+	
+	self.__objects[object] = function(renderStepBinding: RenderStepBinding)
+		RunService:UnbindFromRenderStep(renderStepBinding.name)
 	end
 	
-	return self:FastAdd(unbindRenderStepFunction, FunctionType)
+	return object
 end
 
 --[[
@@ -2800,7 +2824,15 @@ end
 function Tome.UnbindRenderStepped(self: Tome, name: string) : ()
 	assert(type(name) == "string", "Expected argument #1 'name' to be a string type.")
 	
-	RunService:UnbindFromRenderStep(name)
+	for object: any in self.__objects do
+		if getmetatable(object) == RENDER_STEP_METAMETHODS and object.name == name then
+			RunService:UnbindFromRenderStep(name)
+			
+			self.__objects[object] = nil
+			
+			break
+		end
+	end
 end
 
 --[[
