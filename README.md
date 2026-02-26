@@ -63,7 +63,8 @@ The majority of these methods will create, append or instantiate something. In a
 - `Tome.Is` : Returns whether the provided object is a Tome object or not.
 - `Tome.schedule` : Schedules an object to be removed after the provided life time. See [Tome vs Debris](https://github.com/y29r/Tome?tab=readme-ov-file#tome-vs-debris) for more information.
 - `Tome.unschedule` : Unschedules an object to be removed from the Schedular. Stopping the object from destroying after the provided life time. See [Tome vs Debris](https://github.com/y29r/Tome?tab=readme-ov-file#tome-vs-debris) for more information.
-- `Tome.group` : Groups tuple objects into a symbolic table that tells `Tome.schedule` and `Tome.unschedule` to append all the objects with the same life time.
+- `Tome.group` : Groups tuple objects into a symbolic array that lets `Tome.schedule` know to append all the objects within as one.
+- `Tome()` : On an instantiated Tome, calling it also destroys it. This is useful in places that require a clean up function, but returning the Tome feels favourable instead of `Tome:WrapDestroy`.
 
 Every method has an example of use case above it: [Tome-main](https://github.com/y29r/Tome/blob/main/Tome.luau)
 
@@ -173,32 +174,23 @@ The schedular is what Tome uses to dispose of scheduled objects over time. Tome 
 Any scheduled objects wiil remain in the schedular regardless if the main thread dies or if the script scheduling the object gets destroyed. This is to mimic how Debris works, however this may be changed, or a flag may be added to disable this.
 
 ## Group Scheduling
-Tome allows you to schedule groups of objects to be destroyed at the same time.
-
-> [!IMPORTANT]
-> The schedular will append all the objects iteratively; which means multiple entries are created, not just one. So you can also do either of the following and it will do the same thing:
-> ```luau
-> Tome.schedule(workspace.Part, 2)
-> Tome.schedule(workspace.Part2, 2)
-> 
-> -- alternatively:
-> for index: number, object: BasePart in {workspace.Part, workspace.Part2} do
-> 	Tome.schedule(object, 2)
-> end
-> ```
-
-Grouping objects is as simple as wrapping them in `Tome.group`:
+Tome offers `Tome.group` which takes in any tuple arguments (destroyable objects) and wraps them in a symbolic array that lets Tome be aware on how to handle the objects. The reason you can't simply add an array of objects e.g.
 ```luau
-Tome.schedule(Tome.group(workspace.Part, workspace.Part2), 2)
+local objects: {Part} = {workspace.Part, workspace.Part2}
+
+Tome.schedule(objects, 2.0)
 ```
+Is because Tome treats arrays and dictionaries as objects. Tome tries to find a way to destroy the array, but of course that's not exactly possible. This is what groups solve.
 
-Unscheduling works the same way:
-```luau
--- add all the parts to the schedular
-Tome.schedule(Tome.group(workspace.Part, workspace.Part2, workspace.Part3), 2)
+### The downside to Groups
+Tome groups are directly placed inside the schedular. This means later on if you need to cancel a schedule for an object, it's impossible without hacky solutions. If it's unknown that an object could be cancelled from the schedular, then it's recommended to use `Tome.schedule` directly on the object.
 
--- now remove a couple of parts and be left with one
-Tome.unschedule(Tome.group(workspace.Part, workspace.Part2))
-```
-
-At some point the schedular will allow groups to only be referenced as a singular entry to improve performance.
+### The upside to Groups
+With the primary con out of the way, why should groups be encouraged? And it really boils down to inline destruction and optimization.
+- #### What is inline destruction?
+  - Internally, Tome uses `RunService.Heartbeat` to calculate the next schedule check. This means that if you append objects with very close time margins, some objects may be delayed a frame or two. This can be logically breaking and it would be hard to rely on. Groups completely erase this issue because once the group is scheduled for destruction, all the objects are destroyed at the same time, and in the order they were passed in.
+- #### Optimization:
+  - By running benchmarks on manually appending vs grouping, it was found that grouping had a **~4x** faster resolve speed. This is because Tome uses a form of priority queue that at worst has an `O(log n)` time complexity. Manually appending has that worst case running on every append. While grouping only has it once.
+ 
+### Which should you use?
+Between groups and manually appending, they're both sort of the same when it comes to minimal clean up (which most projects have) It's really up to preference.
