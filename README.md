@@ -64,7 +64,7 @@ The majority of these methods will create, append or instantiate something. In a
 - `Tome.schedule` : Schedules an object to be removed after the provided life time. See [Tome vs Debris](https://github.com/y29r/Tome?tab=readme-ov-file#tome-vs-debris) for more information.
 - `Tome.unschedule` : Unschedules an object to be removed from the Schedular. Stopping the object from destroying after the provided life time. See [Tome vs Debris](https://github.com/y29r/Tome?tab=readme-ov-file#tome-vs-debris) for more information.
 - `Tome.group` : Groups tuple objects into a symbolic array that lets `Tome.schedule` know to append all the objects within as one.
-- `Tome()` : On an instantiated Tome, calling it also destroys it. This is useful in places that require a clean up function, but returning the Tome feels favourable instead of `Tome:WrapDestroy`.
+- `Tome()` : On an instantiated Tome, calling it also destroys it. This is useful in places that require a clean up function, but returning/calling the Tome feels favourable instead of `Tome:WrapDestroy`.
 
 Every method has an example of use case above it: [Tome-main](https://github.com/y29r/Tome/blob/main/Tome.luau)
 
