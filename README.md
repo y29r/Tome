@@ -2,6 +2,7 @@
 An object-oriented garbage collection module for luau
 
 ## Methods
+The majority of these methods will create, append or instantiate something. In almost all cases these new creations will be added to the Tome they were called from automatically; in other words they are wrappers for commonly used code.
 - `Tome.new` : Instantiates a new Tome with provides these methods:
 	- `Tome:Add` : Adds an object to the Tome.
 	- `Tome:AddTuple` : Adds tuple objects to the Tome.
