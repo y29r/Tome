@@ -11,7 +11,7 @@ An object-oriented garbage collection module for luau
 	- `Tome:AddPage` : Constructs a Page (alias for Tome) and adds it to the Tome.
 	- `Tome:Attach` : Attaches the Tome to an object. When the object is destroyed, the Tome will destroy too.
 	- `Tome:AttachTuple` : Same as Tome:Attach but tuple objects can be passed.
-	- `Tome:BindRenderStepped` : Binds to the RunService:BindToRenderStep method.
+	- `Tome:BindRenderStepped` : Binds to the [`RunService:BindToRenderStep`](https://create.roblox.com/docs/reference/engine/classes/RunService#BindToRenderStep) method.
 	- `Tome:CanDestroy` : Returns whether the Tome can be destroyed or not.
 	- `Tome:Clone` : `:Clone`s an object and adds it to the Tome.
 	- `Tome:Connect` : Connects a function to a Signal and adds that connection to the Tome.
