@@ -132,6 +132,7 @@ Currently you can provide these as manual destroy methods:
 - `Tome.ThreadType`
 - `Tome.TweenType`
 - `function`
+- `{__call}` (table with a metatable that has a __call metamethod)
 
 Any string passed in will tell Tome to index the object with the string and then safely call the return value e.g.
 ```luau
@@ -154,6 +155,25 @@ scopeTome:Add(workspace.Part, function(part: BasePart)
 		part:Destroy()
 	end)
 end)
+```
+
+If a table that has a `__call` metamethod attached, Tome will assume that's now to clean the object up (this is a last resort, `.Destroy`, `.destroy` & couple more are checked prior to this)
+```luau
+local object = setmetatable({
+	myInstances = {workspace.Part, workspace.Part2}
+}, {
+	__call = function(self: {myInstances: {Instance}})
+		for index: number, instance: Instance in self.myInstances do
+			instance:Destroy()
+		end
+		
+		table.clear(self.myInstances)
+	end,
+})
+
+local myTome: Tome.Tome = Tome.new()
+myTome:Add(object)
+myTome:Destroy()
 ```
 
 ## Tome vs Debris
