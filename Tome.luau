@@ -3790,6 +3790,7 @@ end
 
 --[[
 	
+	@metamethod
 	@within Tome
 	@return void
 	
@@ -3799,6 +3800,7 @@ end
 	manually calling Tome:Destroy, but useful in environments where functions are
 	required for clean up.
 	
+	Example(s):
 	```luau
 	local Tome = require("../Path/To/Tome")
 	local newTome = Tome.new()
@@ -3811,8 +3813,59 @@ end
 	```
 	
 ]]
-function Tome.__call(self: any, ...: any) : () -- TODO: Replace 'any' with 'Tome' once the new solver is released
+function Tome.__call(self: Tome, ...: any) : () -- TODO: Replace 'any' with 'Tome' once the new solver is released
 	self:Destroy(...)
+end
+
+--[[
+	
+	@metamethod
+	@within Tome
+	@param object any
+	@return object
+	
+	Adds an object to the Tome using the + math operator.
+	Includes metatable index overhead, but is convenient when wanting to write faster.
+	
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local newTome = Tome.new()
+	
+	local part: Part = newTome + workspace.Part -- adds the part to the Tome
+	print(part:GetFullName())
+	```
+	
+]]
+function Tome.__add<object>(self: Tome, object: object) : object
+	return self:Add(object, nil)
+end
+
+--[[
+	
+	@metamethod
+	@within Tome
+	@param object object
+	@return object
+	
+	Removes the object from the Tome using the - math operator.
+	Includes metatable index overhead, but is convenient when wanting to write faster.
+	
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local newTome = Tome.new()
+	
+	local part: Part = newTome + workspace.Part
+	print(newTome:Contains(part)) --> true
+	
+	local part: Part = newTome - workspace.Part
+	print(newTome:Contains(part)) --> false
+	```
+	
+]]
+function Tome.__sub<object>(self: Tome, object: object) : object
+	return self:Remove(object)
 end
 
 return Tome
