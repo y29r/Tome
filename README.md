@@ -214,3 +214,23 @@ With the primary con out of the way, why should groups be encouraged? And it rea
  
 ### Which should you use?
 Between groups and manually appending, they're both sort of the same when it comes to minimal clean up (which most projects have) It's really up to preference.
+
+## Ternary Operators
+Tome has another unique way to mutate objects. And that is with the standard mathematical ternary operators. Currently Tome supports:
+- `+` : Adds an object into the Tome
+- `-` : Removes an object from the Tome (doesn't destroy it)
+
+> [!NOTE]
+> Internally Tome uses a metatable hooked to the ternary metamethods, this means you will get more overhead when appending objects. If you prefer adding objects like this, ensure performance isn't an issue. It's important to keep in mind that these operations are atomic `~<0.1μs` so it may not really matter.
+
+Example:
+```luau
+local Tome = require("../Path/To/Tome")
+local newTome = Tome.new()
+
+local part: Part = newTome + workspace.Part
+print(newTome:Contains(part)) --> true
+
+local part: Part = newTome - workspace.Part
+print(newTome:Contains(part)) --> false
+```
