@@ -9,6 +9,7 @@ The majority of these methods will create, append or instantiate something. In a
 	- `Tome:AddFromArray` : Adds objects from an array, into the Tome.
  	- `Tome:AddFromDictionary` : Adds objects from a dictionary, into the Tome. The keys are expected to be objects and the values are expected to be destroy methods. If the destroy method is unknown, use `Tome.Guess` as the value.
 	- `Tome:AddPromise` : Adds a standard Promise to the Tome.
+    - `Tome:AddWIthMiddleware` : Adds an object to the Tome with a middleware function for end effects.
 	- `Tome:AddPage` : Constructs a Page (alias for Tome) and adds it to the Tome.
 	- `Tome:Attach` : Attaches the Tome to an object. When the object is destroyed, the Tome will destroy too.
 	- `Tome:AttachTuple` : Same as Tome:Attach but tuple objects can be passed.
