@@ -89,7 +89,7 @@ export type Tome = {
 	Rename: (self: Tome, name: string?) -> Tome,
 	
 	Add: <object>(self: Tome, object: object, destroyMethod: DestroyMethod?) -> object,
-	AddWithMiddleware: <object>(self: Tome, object: object, middleware: (object: object, complete: () -> ()) -> (), destroyMethod: DestroyMethod?) -> object,
+	AddWithMiddleware: <object>(self: Tome, object: object, middleware: (object: object) -> (), destroyMethod: DestroyMethod?, synchronous: boolean?) -> object,
 	FastAdd: <object>(self: Tome, object: object, destroyMethod: DestroyMethod?) -> object,
 	AddTuple: <object...>(self: Tome, object...) -> object...,
 	AddFromArray: <objectsArray>(self: Tome, objectsArray: objectsArray) -> objectsArray,

@@ -1600,50 +1600,87 @@ function Tome.AddFromDictionary(self: Tome, dictionary: ObjectDictionary) : Obje
 	return dictionary
 end
 
+local MIDDLEWARE_WARNING_TEMPLATE: string = "\n\nCaught error during middleware function: %*"
+
 --[[
 	
 	@within Tome
 	@param object any
-	@param middleware (object: any, complete: () -> ()) -> ()
+	@param middleware (object: any) -> ()
 	@param destroyMethod DestroyMethod?
+	@param synchronous boolean?
 	@return object any
 	
-	*Adds* the object to the Tome in a way that allows a middleware function to run before the object is destroyed
-	Once a middleware has been added, there is no way to remove it. The only time the middleware is removed is during
-	the Tome's destroying life cycle.
+	Adds an object into the Tome with a middleware function. This function
+	gets called when the Tome gets destroyed, but prior to the object being
+	destroyed. This allows for short effects prior to destruction. e.g. Fading out,
+	Explosions, Scaling, etc.
 	
-	Yielding is allowed but not recommended as it will delay other objects from being destroyed.
+	The middleware by default does **not** run inside the same thread when Tome
+	destroys objects. This allows for yielding inside middleware without worrying
+	about blocking the main thread. Optionally you can disable this with the 4th
+	argument.
+	
+	For optimization, you can also provide a custom destroy method as the 3rd
+	argument.
+	
+	Middleware are run in a safe call, so errors don't prevent clean up. To get access
+	to these errors, enable the 'Warnings' metaprop during instantiation of the Tome.
 	
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
 	Example(s):
 	```luau
+	local Tome = require("../Path/To/Tome")
 	local newTome = Tome.new()
 	
-	-- the code below will add the part to the Tome, but before the part is destroyed
-	-- the part will scale up and then wait 3 seconds before calling the main destroy
-	newTome:AddWithMiddleware(workspace.Part, function(object: Part, complete: () -> ())
-		object.Size = Vector3.one * 4
-		
-		task.delay(3, complete)
+	newTome:AddWithMiddleware(workspace.Part, function(object: Part)
+		for transparency: number = 0, 1, 0.1 do
+			object.Transparency = transparency
+			
+			task.wait(0.05)
+		end
 	end)
 	```
 	
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local newTome = Tome.new()
+	
+	newTome:AddWithMiddleware(
+		workspace.Part,
+		function(object: Part)
+			task.wait(2)
+		end,
+		"Destroy", -- custom destroy method
+		true -- synchronous (will run in the same thread when destroying)
+	)
+	```
+	
 ]]
-function Tome.AddWithMiddleware<object>(self: Tome, object: object, middleware: (object: object, complete: () -> ()) -> (), destroyMethod: Types.DestroyMethod?) : object
+function Tome.AddWithMiddleware<object>(
+	self: Tome,
+	object: object,
+	middleware: (object: object) -> (),
+	destroyMethod: Types.DestroyMethod?,
+	synchronous: boolean?
+) : object
 	if self:IsDestroying() then
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add with middleware to the Tome"))
 	end
 	
-	self:FastAdd(function()
-		middleware(object, function()
-			destroyMethod = destroyMethod or getDestroyMethodForObject(object)
-			
-			if destroyMethod then
-				destroyObject(object, destroyMethod)
-			end
-		end)
-	end, FunctionType)
+	local function destroyWithMiddleware(object: object) : ()
+		local success: boolean, result: string? = pcall(middleware, object)
+		if not success and self.__warnings then
+			warn(string.format(MIDDLEWARE_WARNING_TEMPLATE, result))
+		end
+		
+		destroyObject(object, destroyMethod or getDestroyMethodForObject(object))
+	end
+	
+	self.__objects[object] = synchronous and destroyWithMiddleware or function(object: object)
+		task.spawn(destroyWithMiddleware, object)
+	end
 	
 	return object
 end
