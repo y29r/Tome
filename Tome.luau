@@ -3850,7 +3850,7 @@ end
 	```
 	
 ]]
-function Tome.__call(self: Tome, ...: any) : () -- TODO: Replace 'any' with 'Tome' once the new solver is released
+function Tome.__call(self: Tome, ...: any) : ()
 	self:Destroy(...)
 end
 
