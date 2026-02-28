@@ -3905,4 +3905,36 @@ function Tome.__sub<object>(self: Tome, object: object) : object
 	return self:Remove(object)
 end
 
+--[[
+	
+	@metamethod
+	@within Tome
+	@return number
+	
+	Returns the amount of objects inside the Tome.
+	Includes metatable index overhead, but is convenient when wanting to write faster.
+	Alternatively you can use `Tome:Count()` to return the amount of objects.
+	
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local newTome = Tome.new()
+	
+	newTome:Add(workspace.Part)
+	newTome:Add(workspace.Part2)
+	
+	print(#newTome)
+	```
+	
+]]
+function Tome.__len(self: Tome) : number
+	local count: number = 0
+	
+	for object: any in self.__objects do
+		count += 1
+	end
+	
+	return count
+end
+
 return Tome
