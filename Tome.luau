@@ -3850,7 +3850,7 @@ end
 	```
 	
 ]]
-function Tome.__call(self: Tome, ...: any) : ()
+function Tome.__call(self: any, ...: any) : ()
 	self:Destroy(...)
 end
 
