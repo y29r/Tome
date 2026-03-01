@@ -3937,4 +3937,45 @@ function Tome.__len(self: Tome) : number
 	return count
 end
 
+--[[
+	
+	@metamethod
+	@within Tome
+	@return () -> (object, DestroyMethod)
+	
+	Returns an iterator function that goes over all the objects
+	inside the Tome.
+	
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	local newTome = Tome.new()
+	
+	newTome:Add(workspace.Part)
+	newTome:Add(workspace.Part2)
+	
+	for object: any, destroyMethod: Tome.DestroyMethod in newTome do
+		print(object, destroyMethod)
+	end
+	
+	-- Output:
+	Part, "Destroy"
+	Part2, "Destroy"
+	```
+]]
+function Tome.__iter(self: Tome) : () -> (any, DestroyMethod)
+	local currentObject: any = nil
+	local objects: {[any]: DestroyMethod} = self.__objects
+	
+	return function()
+		currentObject = next(objects, currentObject)
+		
+		if currentObject then
+			return currentObject, objects[currentObject]
+		end
+		
+		return nil, nil :: any
+	end
+end
+
 return Tome
