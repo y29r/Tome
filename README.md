@@ -216,7 +216,7 @@ With the primary con out of the way, why should groups be encouraged? And it rea
 ### Which should you use?
 Between groups and manually appending, they're both sort of the same when it comes to minimal clean up (which most projects have) It's really up to preference.
 
-## Ternary Operators
+## Math Operators
 Tome has another unique way to mutate objects. And that is with the standard mathematical ternary operators. Currently Tome supports:
 - `+` : Adds an object into the Tome
 - `-` : Removes an object from the Tome (doesn't destroy it)
