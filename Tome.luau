@@ -2658,7 +2658,7 @@ function Tome.AttachTuple(self: Tome, ...: any) : (() -> (), {Attachment})
 		end
 		
 		self:RemoveFromArray(attachments)
-	end, table.freeze(attachments)
+	end, attachments
 end
 
 --[[

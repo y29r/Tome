@@ -18,7 +18,7 @@
 
 return {
 	FastAdd = true,
-	SpawnDestroy = true,
+	SpawnDestroy = false,
 	Warnings = true,
 	Tagging = false,
 	UseParentMetaprops = true,
