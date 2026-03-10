@@ -1,5 +1,5 @@
 # Tome
-An object-oriented garbage collection module for luau to help write more maintainable code
+An object-oriented garbage collection module for luau to help write more maintainable code.
 
 ## Methods
 The majority of these methods will create, append or instantiate something. In almost all cases these new creations will be added to the Tome they were called from automatically; in other words they are wrappers for commonly used code.
