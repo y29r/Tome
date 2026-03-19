@@ -255,6 +255,7 @@
 local Types: boolean = require("./Types")
 
 export type Metaprops = Types.Metaprops
+export type TweenMetadata = Types.TweenMetadata
 export type DestroyMethod = Types.DestroyMethod
 export type RunServiceSignalName = Types.RunServiceSignalName
 export type OnDestroyParams = Types.OnDestroyParams
@@ -3191,10 +3192,7 @@ function Tome.Tween(
 	instance: Instance,
 	tweenInfo: TweenInfo,
 	propertyTable: {[string]: any},
-	metadata: {
-		Play: boolean?,
-		RemoveOnComplete: boolean?,
-	}?
+	metadata: TweenMetadata?
 ) : Tween
 	assert(typeof(instance) == "Instance", "Expected argument #1 'instance' to be an Instance type.")
 	assert(typeof(tweenInfo) == "TweenInfo", "Expected argument #2 'tweenInfo' to be a TweenInfo type.")
