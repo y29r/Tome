@@ -10,7 +10,7 @@ export type ProductInfo = {
 }
 
 function VERSION.getVersion() : string
-	return "Tome3 v1.2.d-5"
+	return "Tome3 v1.2.d-6"
 end
 
 local function extractVersionsFromDescription(description: string) : {string}

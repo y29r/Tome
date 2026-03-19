@@ -210,6 +210,7 @@
 	Tome:RemoveObjectsWithTag : Removes objects with a specified tag from the Tome.
 	Tome:RemoveObjectsOfType : Removes objects of a specified type from the Tome.
 	Tome:Rename : Renames the Tome.
+	Tome:GetName : Returns the name of the Tome.
 	Tome:RipPage : Destroys the provided page and removes it from the Tome.
 	Tome:RipPages : Destroys and removes all the Pages within a Tome.
 	Tome:SetTag : Overrides the default Tome tag used for Instances.
@@ -953,6 +954,28 @@ function Tome.Rename(self: Tome, name: string?) : Tome
 	self.__name = name
 	
 	return self
+end
+
+--[[
+	
+	@within Tome
+	@return string?
+	
+	Returns the name of the Tome. If the Tome doesn't have a name, nil will be returned.
+	
+	Example(s):
+	```luau
+	local Tome = require("../Path/To/Tome")
+	
+	local newTome = Tome.new()
+	newTome:Rename("Test")
+	
+	print(newTome:GetName()) --> "Test"
+	```
+	
+]]
+function Tome.GetName(self: Tome) : string?
+	return self.__name
 end
 
 --[[
