@@ -189,6 +189,7 @@
 	Tome:Contains : Returns whether the specified object exists within the Tome.
 	Tome:Has : Alias for Tome:Contains.
 	Tome:FromExisting : Creates an Instance with Instance.fromExisting and adds it to the Tome.
+	Tome:FastAdd : Adds an object into the Tome but skips over sanity checks and tagging.
 	Tome:GetObjects : Returns all the objects contained within the Tome.
 	Tome:GetObjectsWithTag : Returns all the objects contained within the Tome that contain a provided tag.
 	TOme:GetObjectsOfType : Returns all the objects of a specified type name.
@@ -215,6 +216,7 @@
 	Tome:Tween : Tweens an object and adds the Tween to the Tome.
 	Tome:Table : Adds a table inside the Tome and using table.clear as the destroy method
 	Tome:OnDestroy : Attaches a callback that listens for when the Tome destroys.
+	Tome:Yield() : Yields the current thread and when the Tome is destroyed, it will resume it.
 	
 	Standard supported objects:
 		[thread] = task.cancel(thread)
