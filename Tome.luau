@@ -159,6 +159,8 @@
 	Tome.new : Instantiates a new Tome.
 	Tome.Is : Checks whether the provided object is a Tome.
 	Tome.schedule : Schedules an object to be destroyed after a given life time.
+	Tome.unschedule : Unschedules an object from the Schedular.
+	Tome.group : Groups tuple objects into a unique array with a metatable attached.
 	
 	Tome:Add : Adds an object to the Tome.
 	Tome:AddTuple : Adds multiple objects to the Tome.
