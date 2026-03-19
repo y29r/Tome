@@ -3146,7 +3146,7 @@ function Tome.Table(self: Tome, existing: {[any]: any}?) : {[any]: any}
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add a table"))
 	end
 	
-	local tableToUse: {[any]: any} = {}
+	local tableToUse: {[any]: any} = existing or {}
 	
 	self.__objects[tableToUse] = table.clear
 	
