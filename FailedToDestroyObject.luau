@@ -24,7 +24,7 @@ return function(object: any, result: any) : ()
 	end
 	
 	return warn(string.format([[
-		Attempted and failed to destroy object: %s.
-		Following error message: %s
+		Attempted and failed to destroy object: %*.
+		Following error message: %*
 	]], object, result))
 end
