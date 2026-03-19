@@ -10,7 +10,7 @@
 	
 ]]
 return function(object: any) : string
-	local realType = typeof(object)
+	local realType: string = typeof(object)
 	
 	if realType == "table" and object.__type then
 		return object.__type
