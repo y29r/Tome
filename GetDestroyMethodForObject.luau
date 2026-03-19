@@ -45,6 +45,6 @@ return function(object: any) : any
 		end
 	end
 	
-	return throwError(string.format("Attempted to get a destroy method for object '%s', but no destroy method was found.", tostring(object)),
+	return throwError(string.format("Attempted to get a destroy method for object '%*', but no destroy method was found.", object),
 		"Ensure any objects added into the Tome are destroyable. Or pass a custom destroyer function for the object as the second parameter in Tome:Add")
 end
