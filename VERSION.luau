@@ -3,6 +3,7 @@
 local MarketplaceService = game:GetService("MarketplaceService")
 
 local VERSION = {}
+VERSION.AutoFindNewVersion = true
 
 export type ProductInfo = {
 	Description: string,
@@ -111,6 +112,10 @@ do
 		
 		(printFunction or warn)(VERSION.getVersionFormat())
 	end
+end
+
+if VERSION.AutoFindNewVersion and not VERSION.upToDate() then
+	task.spawn(VERSION.checkForNewVersion)
 end
 
 return VERSION
