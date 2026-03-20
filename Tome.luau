@@ -159,7 +159,7 @@
 	Tome.new : Instantiates a new Tome.
 	Tome.Is : Checks whether the provided object is a Tome.
 	Tome.schedule : Schedules an object to be destroyed after a given life time.
-	Tome.unschedule : Unschedules an object from the Schedular.
+	Tome.unschedule : Unschedules an object from the Scheduler.
 	Tome.group : Groups tuple objects into a unique array with a metatable attached.
 	
 	Tome:Add : Adds an object to the Tome.
@@ -555,11 +555,11 @@ local function popRootScheduledObject(
 	return rootEntry
 end
 
-local Schedular = {}
-Schedular.DefaultSchedularSignalName = "Heartbeat" :: RunServiceSignalName
-Schedular.__stepConnection = nil :: RBXScriptConnection?
+local Scheduler = {}
+Scheduler.DefaultSchedulerSignalName = "Heartbeat" :: RunServiceSignalName
+Scheduler.__stepConnection = nil :: RBXScriptConnection?
 
--- no point in storing these in the Schedular because they shouldn't be changed anyway
+-- no point in storing these in the Scheduler because they shouldn't be changed anyway
 local scheduledObjectEntries: {ScheduledObjectEntry} = {}
 local objectToIndexMap: {[any]: number} = {}
 
@@ -568,14 +568,14 @@ local objectToIndexMap: {[any]: number} = {}
 	@return void
 	
 	Checks the object entries hash and pops an entry if its expiration time is less (or equal) to the current time
-	If no object entries exist, the schedular will stop itself from running to save resources.
+	If no object entries exist, the Scheduler will stop itself from running to save resources.
 	
 ]]
-function Schedular.stepSchedular()
+function Scheduler.stepScheduler()
 	local currentTime: number = os.clock()
 	
-	if Schedular.isScheduleEmpty() then
-		Schedular.stopSchedular()
+	if Scheduler.isScheduleEmpty() then
+		Scheduler.stopScheduler()
 		return
 	end
 	
@@ -592,21 +592,21 @@ end
 	
 	@return boolean
 	
-	Returns whether the schedular is currently running
+	Returns whether the Scheduler is currently running
 	
 ]]
-function Schedular.isSchedularRunning() : boolean
-	return Schedular.__stepConnection and Schedular.__stepConnection.Connected or false
+function Scheduler.isSchedulerRunning() : boolean
+	return Scheduler.__stepConnection and Scheduler.__stepConnection.Connected or false
 end
 
 --[[
 	
 	@return boolean
 	
-	Returns whether the schedular is empty (whether the object entries hash is empty)
+	Returns whether the Scheduler is empty (whether the object entries hash is empty)
 	
 ]]
-function Schedular.isScheduleEmpty() : boolean
+function Scheduler.isScheduleEmpty() : boolean
 	return #scheduledObjectEntries == 0
 end
 
@@ -626,17 +626,17 @@ coroutine.resume(spawner)
 	@param runServiceSignalName RunServiceSignalName?
 	@return void
 	
-	Connections a RunService signal to the `Schedular.stepSchedular` function.
-	Optionally you can start the schedular with a given signal name or:
-	You can set the Schedular.DefaultSchedularSignalName to any RunService signal name.
+	Connections a RunService signal to the `Scheduler.stepScheduler` function.
+	Optionally you can start the Scheduler with a given signal name or:
+	You can set the Scheduler.DefaultSchedulerSignalName to any RunService signal name.
 	
 ]]
-function Schedular.startSchedular(runServiceSignalName: RunServiceSignalName?) : ()
-	Schedular.stopSchedular()
+function Scheduler.startScheduler(runServiceSignalName: RunServiceSignalName?) : ()
+	Scheduler.stopScheduler()
 	
 	coroutine.resume(spawner, function()
-		Schedular.__stepConnection = (RunService :: any)
-			[runServiceSignalName or Schedular.DefaultSchedularSignalName]:Connect(Schedular.stepSchedular)
+		Scheduler.__stepConnection = (RunService :: any)
+			[runServiceSignalName or Scheduler.DefaultSchedulerSignalName]:Connect(Scheduler.stepScheduler)
 	end)
 end
 
@@ -644,16 +644,16 @@ end
 	
 	@return void
 	
-	Disconnects the schedular stopping it completely
+	Disconnects the Scheduler stopping it completely
 	
 ]]
-function Schedular.stopSchedular() : ()
-	if Schedular.__stepConnection and Schedular.__stepConnection.Connected then
-		Schedular.__stepConnection:Disconnect()
+function Scheduler.stopScheduler() : ()
+	if Scheduler.__stepConnection and Scheduler.__stepConnection.Connected then
+		Scheduler.__stepConnection:Disconnect()
 	end
 end
 
-Tome.Schedular = Schedular
+Tome.Scheduler = Scheduler
 
 --[[
 	
@@ -706,7 +706,7 @@ export type Group<Tuple> = typeof(
 	```luau
 	local Tome = require("../Path/To/Tome")
 	
-	local part = Tome.schedule(workspace.Part2, 3) -- schedular uses generics to return the object afterwards for some useful cases
+	local part = Tome.schedule(workspace.Part2, 3) -- Scheduler uses generics to return the object afterwards for some useful cases
 	
 	Tome.schedule(function() -- you can insert any objects that go inside Tome as well, not just `Instance`s i.e. functions, threads, classes.
 		print("hello")
@@ -725,8 +725,8 @@ function Tome.schedule<object>(object: object, lifeTime: number, destroyMethod: 
 		return object
 	end
 	
-	if not Schedular.isSchedularRunning() then
-		Schedular.startSchedular()
+	if not Scheduler.isSchedulerRunning() then
+		Scheduler.startScheduler()
 	end
 	
 	local currentTime: number = os.clock()
@@ -795,7 +795,7 @@ end
 	@param object<object>
 	@return <object>
 	
-	Unschedules the provided object if it exists within the schedular.
+	Unschedules the provided object if it exists within the Scheduler.
 	Removing the object doesn't clean up the object.
 	
 	```luau
@@ -807,7 +807,7 @@ end
 	
 	task.wait(1)
 	
-	Tome.unschedule(part) -- change our mind about destroying it, removing it from the schedular
+	Tome.unschedule(part) -- change our mind about destroying it, removing it from the Scheduler
 	```
 	
 ]]
