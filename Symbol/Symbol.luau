@@ -5,6 +5,10 @@
 
 local createSymbol = require("./createSymbol")
 
+export type Symbol = createSymbol.Symbol
+export type SymbolInternal = createSymbol.SymbolInternal
+export type Metatable = createSymbol.Metatable
+
 local Symbol = {
 	createSymbol = createSymbol,
 }

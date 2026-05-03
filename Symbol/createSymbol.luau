@@ -3,11 +3,23 @@
 -- Date: December 2nd, 2025
 -- Deps: []
 
-local metatable: {__tostring: ({name: string, wrapperName: string}) -> string} = {
-	__tostring = function(self: {name: string, wrapperName: string})
+const metatable: Metatable = {
+	__tostring = function(self: Symbol)
 		return string.format("%*(%*)", self.wrapperName, self.name)
 	end
 }
+
+export type Metatable = {
+	__tostring: (Symbol) -> string
+}
+
+export type SymbolInternal = {
+	name: string,
+	wrapperName: string,
+}
+
+-- TODO: Replace with setmetatable<T, U> once the new solver releases
+export type Symbol = typeof(setmetatable({} :: SymbolInternal, metatable))
 
 --[[
 	
@@ -18,14 +30,11 @@ local metatable: {__tostring: ({name: string, wrapperName: string}) -> string} =
 	Useful for sample Enumerators or envisioning data easier
 	
 ]]
-local function createSymbol(name: string, wrapperName: string?) : {name: string}
-	local proxy: any = {}
-	proxy.name = name
-	proxy.wrapperName = wrapperName or "Symbol"
-	
-	setmetatable(proxy, metatable)
-	
-	return proxy
+const function createSymbol(name: string, wrapperName: string?) : Symbol
+	return setmetatable({
+		name = name,
+		wrapperName = wrapperName or "Symbol"
+	}, metatable)
 end
 
 return createSymbol

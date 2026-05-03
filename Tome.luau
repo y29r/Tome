@@ -379,8 +379,8 @@ function Tome.new(metaprops: Types.Metaprops?) : Tome
 	-- creating the variables to stop the new solver from crying.
 	-- will be removed once the solver is refined.
 	const tagRemovedConnection: RBXScriptConnection?,
-		parent: Tome?,
-		name: string? = nil, nil, nil
+	parent: Tome?,
+	name: string? = nil, nil, nil
 	
 	return setmetatable({
 		__fastAdd = if type(FAST_ADD) == "boolean" then FAST_ADD else DEFAULT_FAST_ADD,
@@ -1050,7 +1050,7 @@ function Tome.AddPage(self: Tome, name: string?, metaprops: Types.Metaprops?) : 
 		throwError("Attempted to add a Page that already exists with the given name.")
 	end
 	
-	local newMetaprops: Types.Metaprops = {}
+	local newMetaprops: Metaprops = {}
 	if not metaprops and self.__useParentMetaprops then
 		const FAST_ADD: boolean = self.__fastAdd
 		const SPAWN_DESTROY: boolean = self.__spawnDestroy
@@ -1058,13 +1058,15 @@ function Tome.AddPage(self: Tome, name: string?, metaprops: Types.Metaprops?) : 
 		const TAGGING: boolean = self.__tagging
 		const USE_PARENT_METAPROPS: boolean = self.__useParentMetaprops
 		
-		newMetaprops = {
+		const constructedMetaprops: Metaprops = {
 			FastAdd = FAST_ADD,
 			SpawnDestroy = SPAWN_DESTROY,
 			Warnings = WARNINGS,
 			Tagging = TAGGING,
 			UseParentMetaprops = USE_PARENT_METAPROPS,
 		}
+		
+		newMetaprops = constructedMetaprops
 	end
 	
 	const newPage: Tome = Tome.new(newMetaprops)
@@ -1616,14 +1618,14 @@ function Tome.AddFromDictionary(self: Tome, dictionary: ObjectDictionary) : Obje
 	const FAST_ADD: boolean = self.__fastAdd
 	
 	if FAST_ADD then
-		for object: any, destroyMethod: DestroyMethod | {name: string} in dictionary do
+		for object: any, destroyMethod: DestroyMethod in dictionary do
 			validateObject(object, self)
 			
 			self.__objects[object] = destroyMethod == GuessType
 				and getDestroyMethodForObject(object) or destroyMethod
 		end
 	else
-		for object: any, destroyMethod: DestroyMethod | {name: string} in dictionary do
+		for object: any, destroyMethod: DestroyMethod in dictionary do
 			self.__objects[object] = destroyMethod == GuessType
 				and getDestroyMethodForObject(object) or destroyMethod
 		end
@@ -1702,7 +1704,7 @@ function Tome.AddWithMiddleware<object>(
 	end
 	
 	const function destroyWithMiddleware(object: object) : ()
-		const success: boolean, result: string? = pcall(middleware, object)
+		const success: boolean, result: unknown = pcall(middleware, object)
 		if not success and self.__warnings then
 			warn(string.format(MIDDLEWARE_WARNING_TEMPLATE, result))
 		end
@@ -1821,13 +1823,13 @@ function Tome.AddFromArray<objectsArray>(self: Tome, objectsArray: objectsArray)
 	const FAST_ADD: boolean = self.__fastAdd
 	
 	if FAST_ADD then
-		for index: number, object: any in objectsArray do
+		for index: number, object: any in objectsArray :: any do
 			validateObject(object, self)
 			
 			self.__objects[object] = getDestroyMethodForObject(object)
 		end
 	else
-		for index: number, object: any in objectsArray do
+		for index: number, object: any in objectsArray :: any do
 			self.__objects[object] = getDestroyMethodForObject(object)
 		end
 	end
@@ -1915,7 +1917,7 @@ function Tome.Remove<object>(self: Tome, object: object) : object
 	if typeof(object) == "Instance" then
 		const tomeTag: string? = self:GetTag()
 		if tomeTag then
-			object:RemoveTag(tomeTag)
+			(object :: Instance):RemoveTag(tomeTag)
 		end
 	end
 	
@@ -2004,7 +2006,7 @@ function Tome.RemoveFromArray<objectsArray>(self: Tome, objectsArray: objectsArr
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "remove objects from array"))
 	end
 	
-	for index: number, object: any in objectsArray do
+	for index: number, object: any in objectsArray :: any do
 		self:Remove(object)
 	end
 	
@@ -2544,7 +2546,7 @@ function Tome.Attach(self: Tome, object: any) : Attachment?
 		return object:Add(self:WrapDestroy(), FunctionType)
 	elseif objectType == "Instance" then
 		if not object:IsDescendantOf(game) then
-			return
+			return nil
 		end
 		
 		-- bad up values should be changed at some point
@@ -3792,64 +3794,69 @@ function Tome.OnDestroy(self: Tome, callback: (...any) -> (), onDestroyParams: O
 	end
 end
 
---[[
+do
+	const deferThread: (...any) -> () = task.defer
+	const spawnThread: (...any) -> () = task.spawn
 	
-	@within Tome
-	@param ... any
-	@return void
-	
-	Destroys the Tome alongside any Pages and objects within it. Clears any references to
-	objects and Pages within the Tome too.
-	
-	Destroy callbacks are invoked after everything is destroyed to guarantee clarity
-	Keep in mind synchronous callbacks will yield the Tome if the callback is yieldable
-	To prevent callbacks from being synchronous, use:
-	```luau
-	Tome:OnDestroy(callback, { Synchronous = false })
-	```
-	
-	Will throw an error if the Tome is in the middle of being destroyed.
-	
-	Example(s):
-	```luau
-	const Tome = require("../Path/To/Tome")
-	const newTome = Tome.new()
-	
-	-- add a cube to the Tome
-	newTome:Add(workspace.Cube)
-	
-	-- destroys the Tome, which in this case will destroy the cube
-	newTome:Destroy()
-	```
-	
-]]
-function Tome.Destroy(self: Tome, ...: any) : ()
-	if self:IsDestroying() then
-		error(string.format([[
+	--[[
+		
+		@within Tome
+		@param ... any
+		@return void
+		
+		Destroys the Tome alongside any Pages and objects within it. Clears any references to
+		objects and Pages within the Tome too.
+		
+		Destroy callbacks are invoked after everything is destroyed to guarantee clarity
+		Keep in mind synchronous callbacks will yield the Tome if the callback is yieldable
+		To prevent callbacks from being synchronous, use:
+		```luau
+		Tome:OnDestroy(callback, { Synchronous = false })
+		```
+		
+		Will throw an error if the Tome is in the middle of being destroyed.
+		
+		Example(s):
+		```luau
+		const Tome = require("../Path/To/Tome")
+		const newTome = Tome.new()
+		
+		-- add a cube to the Tome
+		newTome:Add(workspace.Cube)
+		
+		-- destroys the Tome, which in this case will destroy the cube
+		newTome:Destroy()
+		```
+		
+	]]
+	function Tome.Destroy(self: Tome, ...: any) : ()
+		if self:IsDestroying() then
+			error(string.format([[
 			%s.
 			If Tome:Destroy is invoked frequently, try using Tome:CanDestroy before attempting to destroy the Tome.
 		]], string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "destroy the Tome")))
-	end
-	
-	self.__destroying = true
-	
-	self:DestroyAllObjects(true)
-	self:DestroyAllPages(true)
-	
-	self.__destroying = false
-	
-	for index: number, callbackData: OnDestroyCallbackData in self.__destroyCallbacks do
-		const callback: (...any) -> () = callbackData.callback
-		const onDestroyParams: OnDestroyParams = callbackData.OnDestroyParams
-		
-		if onDestroyParams.Synchronous then
-			callback(...)
-		else
-			task[onDestroyParams.Deferred and "defer" or "spawn"](callback, ...)
 		end
 		
-		if onDestroyParams.RemoveOnDestroy then
-			table.remove(self.__destroyCallbacks, index)
+		self.__destroying = true
+		
+		self:DestroyAllObjects(true)
+		self:DestroyAllPages(true)
+		
+		self.__destroying = false
+		
+		for index: number, callbackData: OnDestroyCallbackData in self.__destroyCallbacks do
+			const callback: (...any) -> () = callbackData.callback
+			const onDestroyParams: OnDestroyParams = callbackData.OnDestroyParams
+			
+			if onDestroyParams.Synchronous then
+				callback(...)
+			else
+				(onDestroyParams.Deferred and deferThread or spawnThread)(callback, ...)
+			end
+			
+			if onDestroyParams.RemoveOnDestroy then
+				table.remove(self.__destroyCallbacks, index)
+			end
 		end
 	end
 end

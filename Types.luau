@@ -1,6 +1,7 @@
 --!strict
 
 local SignalTypes = require("./Signal/Types")
+const Symbol = require("./Symbol/Symbol")
 
 export type DestroyMethod = (
 	(object: any) -> ()
@@ -10,7 +11,9 @@ export type DestroyMethod = (
 	"cancel" |
 	"Disconnect" |
 	string
-) | {[any]: any}
+)
+| {[any]: any}
+| Symbol.Symbol
 
 export type Attachment = RBXScriptConnection | SignalTypes.Connection | () -> ()
 
