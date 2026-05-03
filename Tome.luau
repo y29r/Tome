@@ -376,7 +376,13 @@ function Tome.new(metaprops: Types.Metaprops?) : Tome
 	local SPAWN_DESTROY: boolean? = metaprops and metaprops.SpawnDestroy
 	local USE_PARENT_METAPROPS: boolean? = metaprops and metaprops.UseParentMetaprops
 	
-	local self: Tome = setmetatable({
+	-- creating the variables to stop the new solver from crying.
+	-- will be removed once the solver is refined.
+	local tagRemovedConnection: RBXScriptConnection?,
+		parent: Tome?,
+		name: string? = nil, nil, nil
+	
+	return setmetatable({
 		__fastAdd = if type(FAST_ADD) == "boolean" then FAST_ADD else DEFAULT_FAST_ADD,
 		__spawnDestroy = if type(SPAWN_DESTROY) == "boolean" then SPAWN_DESTROY else DEFAULT_SPAWN_DESTROY,
 		__warnings = if type(WARNINGS) == "boolean" then WARNINGS else DEFAULT_WARNINGS,
@@ -384,15 +390,13 @@ function Tome.new(metaprops: Types.Metaprops?) : Tome
 		__pages = {},
 		__objects = {},
 		__destroying = false,
-		__name = nil,
-		__parent = nil,
+		__name = name,
+		__parent = parent,
 		__useParentMetaprops = if type(USE_PARENT_METAPROPS) == "boolean" then USE_PARENT_METAPROPS else DEFAULT_USE_PARENT_METAPROPS,
 		__tomeTag = (TAGGING and HttpService:GenerateGUID(false)) or nil,
-		__tagRemovedConnection = nil,
+		__tagRemovedConnection = tagRemovedConnection,
 		__destroyCallbacks = {},
 	}, Tome)
-	
-	return self
 end
 
 --[[
@@ -497,7 +501,7 @@ local function bubbleDownSchedule(
 	indexMap: {[any]: number}
 ) : ()
 	local hashSize: number = #hash
-
+	
 	while true do
 		local smallestIndex: number = index
 		
@@ -636,7 +640,7 @@ function Scheduler.startScheduler(runServiceSignalName: RunServiceSignalName?) :
 	
 	coroutine.resume(spawner, function()
 		Scheduler.__stepConnection = (RunService :: any)
-			[runServiceSignalName or Scheduler.DefaultSchedulerSignalName]:Connect(Scheduler.stepScheduler)
+		[runServiceSignalName or Scheduler.DefaultSchedulerSignalName]:Connect(Scheduler.stepScheduler)
 	end)
 end
 
@@ -866,7 +870,7 @@ function Tome.SetTag(self: Tome, tag: string?) : Tome
 		
 		return self
 	end
-
+	
 	self.__tomeTag = tag
 	
 	return self
@@ -1211,7 +1215,7 @@ function Tome.RipPage(self: Tome, nameOrPage: string | Tome) : Tome
 		if pageName then
 			parentPage.__pages[pageName] = nil
 		end
-	
+		
 		return self
 	elseif nameOrPageType == "string" then
 		local page: Tome? = self.__pages[nameOrPage :: string]
@@ -2371,7 +2375,7 @@ function Tome.Clone(self: Tome, object: any, extendFunctionName: string?) : any
 end
 
 local INSTANCE_FORMAT_STRING: string = "\n\tAttempted to set property '%s' to an Instance created by Tome.\n\tReason: %*"
-	
+
 --[[
 	
 	@within Tome
@@ -3243,12 +3247,12 @@ function Tome.Tween(
 			
 			tween.Completed:Once(tweenCompleted)
 		end
-
+		
 		if metadata.Play then
 			tween:Play()
 		end
 	end
-
+	
 	return tween
 end
 
