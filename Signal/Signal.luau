@@ -3,19 +3,19 @@
 -- Date: December 2nd, 2025
 -- Deps: []
 
-local HttpService = game:GetService("HttpService")
+const HttpService: HttpService = game:GetService("HttpService")
 
-local Types = require("./Types")
+const Types = require("./Types")
 
 export type Signal = Types.Signal
 export type Connection = Types.Connection
 
-local Connection = {}
+const Connection = {}
 Connection.__index = Connection
 Connection.__type = "Connection"
 
 function Connection.new() : Types.Connection
-	local self = setmetatable({
+	const self = setmetatable({
 		__listeners = {},
 		Connected = true,
 	}, Connection) :: any
@@ -58,12 +58,12 @@ function Connection:Disconnect() : ()
 	self.Connected = false
 end
 
-local Signal = {}
+const Signal = {}
 Signal.__index = Signal
 Signal.__type = "Signal"
 
 function Signal.new() : Types.Signal
-	local self = setmetatable({
+	const self = setmetatable({
 		__activeListeners = {},
 		__activeConnections = {},
 		__onceListeners = {},
@@ -75,13 +75,13 @@ function Signal.new() : Types.Signal
 	return self :: Types.Signal
 end
 
-local function callListenersOfTable(listenerHash: {[Types.SignalListener]: any}, ...: any) : ()
+const function callListenersOfTable(listenerHash: {[Types.SignalListener]: any}, ...: any) : ()
 	for listener: Types.SignalListener in listenerHash do
 		task.spawn(listener, ...)
 	end
 end
 
-local function disconnectAllConnections(connectionHash: {[Types.Connection]: boolean}) : ()
+const function disconnectAllConnections(connectionHash: {[Types.Connection]: boolean}) : ()
 	for connection: Types.Connection in connectionHash do
 		if not connection.Connected then
 			continue
@@ -109,9 +109,9 @@ function Signal:__resumeThreads(...: any) : ()
 			task.spawn(listener, ...)
 		end
 		
-		local success: boolean, errorMessage: string = coroutine.resume(thread)
+		const success: boolean, errorMessage: string = coroutine.resume(thread)
 		if not success then
-			local threadName: string = tostring(thread)
+			const threadName: string = tostring(thread)
 			
 			warn(string.format("Failed to resume thread. Error message: %* | %*", errorMessage, threadName))
 		end
@@ -129,7 +129,7 @@ end
 	an error will be thrown.
 	
 	```lua
-	local signal = Signal.new()
+	const signal = Signal.new()
 	
 	signal:Connect(function(first, second)
 		print(first, second) -> "Hello,", " world!"
@@ -170,9 +170,9 @@ end
 	the Signal's listeners table.
 	
 	```lua
-	local signal = Signal.new()
+	const signal = Signal.new()
 	
-	local connection = signal:Connect(function(something)
+	const connection = signal:Connect(function(something)
 		print(something)
 	end)
 	
@@ -181,9 +181,9 @@ end
 	``` -> "Something"
 	
 	```lua
-	local signal = Signal.new()
+	const signal = Signal.new()
 	
-	local connection = signal:Connect(function(something)
+	const connection = signal:Connect(function(something)
 		print(something)
 	end)
 	
@@ -199,12 +199,12 @@ function Signal:Connect(listener: Types.SignalListener) : Types.Connection
 	assert(type(listener) == "function", "Signal:Connect listener argument must be a function type")
 	assert(self.__isActive, "Attempted to connect to a Signal that is inactive.")
 	
-	local activeListeners: {[Types.SignalListener]: boolean?} = self.__activeListeners
-	local activeConnections: {[Types.Connection]: boolean?} = self.__activeConnections
+	const activeListeners: {[Types.SignalListener]: boolean?} = self.__activeListeners
+	const activeConnections: {[Types.Connection]: boolean?} = self.__activeConnections
 	
 	activeListeners[listener] = true
 	
-	local connection: Types.Connection = Connection.new()
+	const connection: Types.Connection = Connection.new()
 	
 	connection:__addListener(function()
 		activeListeners[listener] = nil
@@ -225,9 +225,9 @@ end
 	it does, it will self disconnect itself.
 	
 	```lua
-	local signal = Signal.new()
+	const signal = Signal.new()
 	
-	local connection = signal:Once(function(something)
+	const connection = signal:Once(function(something)
 		print(something)
 	end)
 	
@@ -238,9 +238,9 @@ end
 	``` -> "Something1" (Only "Something1" is printed because the connection disconnected itself after the first fire)
 	
 	```lua
-	local signal = Signal.new()
+	const signal = Signal.new()
 	
-	local connection = signal:Once(function(something)
+	const connection = signal:Once(function(something)
 		print(something)
 	end)
 	
@@ -258,12 +258,12 @@ function Signal:Once(listener: Types.SignalListener) : Types.Connection
 	assert(type(listener) == "function", "Signal:Once listener argument must be a function type")
 	assert(self.__isActive, "Attempted to connect once to a Signal that is inactive.")
 	
-	local onceListeners: {[Types.SignalListener]: boolean?} = self.__onceListeners
-	local onceConnections: {[Types.Connection]: boolean?} = self.__onceConnections
+	const onceListeners: {[Types.SignalListener]: boolean?} = self.__onceListeners
+	const onceConnections: {[Types.Connection]: boolean?} = self.__onceConnections
 	
 	onceListeners[listener] = true
 	
-	local connection: Types.Connection = Connection.new()
+	const connection: Types.Connection = Connection.new()
 	
 	connection:__addListener(function()
 		onceListeners[listener] = nil
@@ -285,7 +285,7 @@ end
 	
 ]]
 function Signal:Wait(listener: Types.SignalListener?) : ...any
-	local currentThread: thread = coroutine.running()
+	const currentThread: thread = coroutine.running()
 	
 	if listener then
 		self.__waitingListeners[listener] = currentThread

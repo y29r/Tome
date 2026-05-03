@@ -1,8 +1,8 @@
 --!strict
 
-local MarketplaceService = game:GetService("MarketplaceService")
+const MarketplaceService = game:GetService("MarketplaceService")
 
-local VERSION = {}
+const VERSION = {}
 VERSION.AutoFindNewVersion = true
 
 export type ProductInfo = {
@@ -13,8 +13,8 @@ function VERSION.getVersion() : string
 	return "Tome3 v1.2.d-8"
 end
 
-local function extractVersionsFromDescription(description: string) : {string}
-	local versions: {string} = {}
+const function extractVersionsFromDescription(description: string) : {string}
+	const versions: {string} = {}
 	
 	for index: number, version: string in string.split(description, "\n") do
 		table.insert(versions, version)
@@ -23,9 +23,9 @@ local function extractVersionsFromDescription(description: string) : {string}
 	return versions
 end
 
-local function formatVersionArray(versions: {string}) : string
-	local currentVersion: string = VERSION.getVersion()
-	local latestVersion: string = versions[1]
+const function formatVersionArray(versions: {string}) : string
+	const currentVersion: string = VERSION.getVersion()
+	const latestVersion: string = versions[1]
 	
 	local formattedVersion: string = "\n"
 	
@@ -37,7 +37,7 @@ local function formatVersionArray(versions: {string}) : string
 	formattedVersion ..= "Latest versions:\n"
 	
 	local foundVersion: boolean = false
-	local bulletPoint: string = utf8.char(0x2022)
+	const bulletPoint: string = utf8.char(0x2022)
 	
 	for index: number, version: string in versions do
 		formattedVersion ..= `  {bulletPoint} `
@@ -65,13 +65,13 @@ local function formatVersionArray(versions: {string}) : string
 end
 
 do
-	local TOME_PLACE_ID: number = 134275459302272
+	const TOME_PLACE_ID: number = 134275459302272
 	
 	function VERSION.getVersionDescription() : string
 		local attempts: number = 0
 		
 		while true do
-			local success: boolean, productInfo: ProductInfo = pcall(function()
+			const success: boolean, productInfo: ProductInfo = pcall(function()
 				return MarketplaceService:GetProductInfoAsync(TOME_PLACE_ID, Enum.InfoType.Asset)
 			end)
 			

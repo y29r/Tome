@@ -1,11 +1,12 @@
 --!strict
 
-local Types = require("./Types")
-local TweenType = require("./TweenType")
-local ThreadType = require("./ThreadType")
-local FunctionType = require("./FunctionType")
+const Types = require("./Types")
 
-local THREAD_DEAD_STATE: string = "dead"
+const TweenType = require("./TweenType")
+const ThreadType = require("./ThreadType")
+const FunctionType = require("./FunctionType")
+
+const THREAD_DEAD_STATE: string = "dead"
 
 --[[
 
@@ -29,13 +30,13 @@ return function(object: any, destroyMethod: Types.DestroyMethod) : ()
 		object:Destroy()
 	elseif destroyMethod == ThreadType then
 		--TODO: Manage other thread states and perhaps allow for something more flexible and robust
-		local threadStatus: "dead" | "normal" | "running" | "suspended" = coroutine.status(object)
+		const threadStatus: "dead" | "normal" | "running" | "suspended" = coroutine.status(object)
 		
 		if threadStatus ~= THREAD_DEAD_STATE then
 			pcall(task.cancel, object)
 		end
 	else
-		local destroyFunction: ((object: any) -> ())? = object[destroyMethod]
+		const destroyFunction: ((object: any) -> ())? = object[destroyMethod]
 		if destroyFunction then
 			pcall(destroyFunction, object)
 		end

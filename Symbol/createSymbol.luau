@@ -30,11 +30,9 @@ export type Symbol = typeof(setmetatable({} :: SymbolInternal, metatable))
 	Useful for sample Enumerators or envisioning data easier
 	
 ]]
-const function createSymbol(name: string, wrapperName: string?) : Symbol
+return function(name: string, wrapperName: string?) : Symbol
 	return setmetatable({
 		name = name,
 		wrapperName = wrapperName or "Symbol"
 	}, metatable)
 end
-
-return createSymbol

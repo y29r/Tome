@@ -1,6 +1,6 @@
 --!strict
 
-local SignalTypes = require("./Signal/Types")
+const SignalTypes: boolean = require("./Signal/Types")
 const Symbol = require("./Symbol/Symbol")
 
 export type DestroyMethod = (

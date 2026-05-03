@@ -35,4 +35,4 @@ export type Signal = {
 	__resumeThreads: (self: Signal, ...any) -> (),
 }
 
-return table.freeze({})
+return false

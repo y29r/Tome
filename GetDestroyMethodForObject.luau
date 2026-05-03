@@ -1,10 +1,12 @@
 --!strict
 
-local TweenType = require("./TweenType")
-local ThreadType = require("./ThreadType")
-local FunctionType = require("./FunctionType")
+const Symbol = require("./Symbol/Symbol")
 
-local throwError = require("./throwError")
+const TweenType: Symbol.Symbol = require("./TweenType")
+const ThreadType: Symbol.Symbol = require("./ThreadType")
+const FunctionType: Symbol.Symbol = require("./FunctionType")
+
+const throwError = require("./throwError")
 
 --[[
 
@@ -16,7 +18,7 @@ local throwError = require("./throwError")
 
 ]]
 return function(object: any) : any
-	local objectType: string = typeof(object)
+	const objectType: string = typeof(object)
 	
 	if objectType == "Instance" then
 		if object:IsA("Tween") then
@@ -38,7 +40,7 @@ return function(object: any) : any
 		elseif type(object.destroy) == "function" then
 			return "destroy"
 		else
-			local metatable: {[string]: any} = getmetatable(object)
+			const metatable: {[string]: any} = getmetatable(object)
 			if metatable and metatable.__call then
 				return metatable.__call
 			end

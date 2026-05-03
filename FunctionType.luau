@@ -1,5 +1,3 @@
 --!strict
 
-local Symbol = require("./Symbol/Symbol")
-
-return Symbol.createSymbol("Tome(FunctionType)")
+return require("./Symbol/Symbol").createSymbol("Tome(FunctionType)")

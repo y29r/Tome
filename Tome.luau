@@ -3446,8 +3446,7 @@ end
 function Tome.Count(self: Tome) : number
 	local count: number = 0
 	
-	const objects: {[any]: DestroyMethod} = self.__objects
-	for object: any in objects do
+	for object: any in self.__objects do
 		count += 1
 	end
 	
