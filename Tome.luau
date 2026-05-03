@@ -33,8 +33,8 @@
 		Types can now be fetched from Tome directly.
 		Resolves double requiring and reduces write count:
 		```luau
-		local Tome = require("../Path/To/Tome")
-		local TomeTypes = require("../Path/To/Types")
+		const Tome = require("../Path/To/Tome")
+		const TomeTypes = require("../Path/To/Types")
 		```
 		Added more detailed attribute tags to methods within comments
 		Fixed Tome:Instance not throwing its warning for invalid properties
@@ -102,7 +102,7 @@
 			Tome:Defer
 			
 			```luau
-			local function foo(bar: string) : string
+			const function foo(bar: string) : string
 				return bar
 			end
 			
@@ -253,7 +253,7 @@
 		
 ]]
 
-local Types: boolean = require("./Types")
+const Types: boolean = require("./Types")
 
 export type Metaprops = Types.Metaprops
 export type TweenMetadata = Types.TweenMetadata
@@ -277,34 +277,34 @@ export type CallableRenderStepBinding = typeof(
 	})
 )
 
-local RunService: RunService = game:GetService("RunService")
-local HttpService: HttpService = game:GetService("HttpService")
-local TweenService: TweenService = game:GetService("TweenService")
-local CollectionService: CollectionService = game:GetService("CollectionService")
+const RunService: RunService = game:GetService("RunService")
+const HttpService: HttpService = game:GetService("HttpService")
+const TweenService: TweenService = game:GetService("TweenService")
+const CollectionService: CollectionService = game:GetService("CollectionService")
 
-local Static = require("./Static")
+const Static = require("./Static")
 
-local TweenType = require("./TweenType")
-local GuessType = require("./GuessType")
-local ThreadType = require("./ThreadType")
-local FunctionType = require("./FunctionType")
+const TweenType = require("./TweenType")
+const GuessType = require("./GuessType")
+const ThreadType = require("./ThreadType")
+const FunctionType = require("./FunctionType")
 
 -- current hotfix to fix the new type solver crying about string formatting
-local TOME_IS_DESTROYING_ERROR_MESSAGE: "Attempted to '%s' while the current Tome is in the middle of being destroyed."
+const TOME_IS_DESTROYING_ERROR_MESSAGE: "Attempted to '%s' while the current Tome is in the middle of being destroyed."
 	= "Attempted to '%s' while the current Tome is in the middle of being destroyed."
 
 -- extension method names for classes that may be invoked on when calling Tome:Clone
-local EXTENSION_METHOD_NAMES: {string} = { "clone", "Clone", "extend", "Extend" }
+const EXTENSION_METHOD_NAMES: {string} = { "clone", "Clone", "extend", "Extend" }
 
-local Signal = require("./Signal/Signal")
+const Signal = require("./Signal/Signal")
 
-local throwError = require("./throwError")
-local realTypeOf = require("./realTypeOf")
-local destroyObject = require("./destroyObject")
-local getDestroyMethodForObject = require("./getDestroyMethodForObject")
-local failedToDestroyObject = require("./failedToDestroyObject")
+const throwError = require("./throwError")
+const realTypeOf = require("./realTypeOf")
+const destroyObject = require("./destroyObject")
+const getDestroyMethodForObject = require("./getDestroyMethodForObject")
+const failedToDestroyObject = require("./failedToDestroyObject")
 
-local Tome = {}
+const Tome = {}
 Tome.__index = Tome
 Tome.__type = "Tome"
 
@@ -342,11 +342,11 @@ export type InternalTome = {
 	__destroyCallbacks: {[number]: OnDestroyCallbackData},
 }
 
-local DEFAULT_SPAWN_DESTROY: boolean = Static.SpawnDestroy
-local DEFAULT_FAST_ADD: boolean = Static.FastAdd
-local DEFAULT_WARNINGS: boolean = Static.Warnings
-local DEFAULT_TAGGING: boolean = Static.Tagging
-local DEFAULT_USE_PARENT_METAPROPS: boolean = Static.UseParentMetaprops
+const DEFAULT_SPAWN_DESTROY: boolean = Static.SpawnDestroy
+const DEFAULT_FAST_ADD: boolean = Static.FastAdd
+const DEFAULT_WARNINGS: boolean = Static.Warnings
+const DEFAULT_TAGGING: boolean = Static.Tagging
+const DEFAULT_USE_PARENT_METAPROPS: boolean = Static.UseParentMetaprops
 
 --[[
 	
@@ -358,8 +358,8 @@ local DEFAULT_USE_PARENT_METAPROPS: boolean = Static.UseParentMetaprops
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- add a cube to the new Tome
 	newTome:Add(workspace.Cube)
@@ -370,15 +370,15 @@ local DEFAULT_USE_PARENT_METAPROPS: boolean = Static.UseParentMetaprops
 	
 ]]
 function Tome.new(metaprops: Types.Metaprops?) : Tome
-	local FAST_ADD: boolean? = metaprops and metaprops.FastAdd
-	local TAGGING: boolean? = metaprops and metaprops.Tagging
-	local WARNINGS: boolean? = metaprops and metaprops.Warnings
-	local SPAWN_DESTROY: boolean? = metaprops and metaprops.SpawnDestroy
-	local USE_PARENT_METAPROPS: boolean? = metaprops and metaprops.UseParentMetaprops
+	const FAST_ADD: boolean? = metaprops and metaprops.FastAdd
+	const TAGGING: boolean? = metaprops and metaprops.Tagging
+	const WARNINGS: boolean? = metaprops and metaprops.Warnings
+	const SPAWN_DESTROY: boolean? = metaprops and metaprops.SpawnDestroy
+	const USE_PARENT_METAPROPS: boolean? = metaprops and metaprops.UseParentMetaprops
 	
 	-- creating the variables to stop the new solver from crying.
 	-- will be removed once the solver is refined.
-	local tagRemovedConnection: RBXScriptConnection?,
+	const tagRemovedConnection: RBXScriptConnection?,
 		parent: Tome?,
 		name: string? = nil, nil, nil
 	
@@ -415,8 +415,8 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	print("#1 Is this object a Tome? ", Tome.Is({})) -- false
 	print("#2 Is this object a Tome? ", Tome.Is(newTome)) -- true
@@ -435,7 +435,7 @@ function Tome.Is(object: any) : boolean
 	
 	-- these methods are from all versions of Tome, so if they exist
 	-- we know that this is at least some kind of Tome.
-	local usesTomeMethods: boolean = type(object.Destroy) == "function"
+	const usesTomeMethods: boolean = type(object.Destroy) == "function"
 		and type(object.BindRenderStepped) == "function"
 	
 	return usesTomeMethods
@@ -458,13 +458,13 @@ end
 	The index map is updated on every swap so lookups remain accurate (hopefully)
 	
 ]]
-local function bubbleUpSchedule(
+const function bubbleUpSchedule(
 	index: number,
 	hash: {ScheduledObjectEntry},
 	indexMap: {[any]: number}
 ) : ()
 	while index > 1 do
-		local parentIndex: number = math.floor(index * 0.5)
+		const parentIndex: number = math.floor(index * 0.5)
 		if hash[parentIndex].ExpiresAt <= hash[index].ExpiresAt then
 			break
 		end
@@ -495,18 +495,18 @@ end
 	The index map is updated on every swap to keep everything up to date.
 	
 ]]
-local function bubbleDownSchedule(
+const function bubbleDownSchedule(
 	index: number,
 	hash: {ScheduledObjectEntry},
 	indexMap: {[any]: number}
 ) : ()
-	local hashSize: number = #hash
+	const hashSize: number = #hash
 	
 	while true do
 		local smallestIndex: number = index
 		
-		local leftIndex: number = index * 2
-		local rightIndex: number = leftIndex + 1
+		const leftIndex: number = index * 2
+		const rightIndex: number = leftIndex + 1
 		
 		if leftIndex <= hashSize and hash[leftIndex].ExpiresAt < hash[smallestIndex].ExpiresAt then
 			smallestIndex = leftIndex
@@ -538,12 +538,12 @@ end
 	Expectes at least one entry, and will throw an error if none exist.
 	
 ]]
-local function popRootScheduledObject(
+const function popRootScheduledObject(
 	heap: {ScheduledObjectEntry},
 	indexMap: {[any]: number}
 ) : ScheduledObjectEntry
-	local heapSize: number = #heap
-	local rootEntry: ScheduledObjectEntry = heap[1]
+	const heapSize: number = #heap
+	const rootEntry: ScheduledObjectEntry = heap[1]
 	
 	heap[1] = heap[heapSize]
 	heap[heapSize] = nil
@@ -559,13 +559,13 @@ local function popRootScheduledObject(
 	return rootEntry
 end
 
-local Scheduler = {}
+const Scheduler = {}
 Scheduler.DefaultSchedulerSignalName = "Heartbeat" :: RunServiceSignalName
 Scheduler.__stepConnection = nil :: RBXScriptConnection?
 
 -- no point in storing these in the Scheduler because they shouldn't be changed anyway
-local scheduledObjectEntries: {ScheduledObjectEntry} = {}
-local objectToIndexMap: {[any]: number} = {}
+const scheduledObjectEntries: {ScheduledObjectEntry} = {}
+const objectToIndexMap: {[any]: number} = {}
 
 --[[
 	
@@ -576,7 +576,7 @@ local objectToIndexMap: {[any]: number} = {}
 	
 ]]
 function Scheduler.stepScheduler()
-	local currentTime: number = os.clock()
+	const currentTime: number = os.clock()
 	
 	if Scheduler.isScheduleEmpty() then
 		Scheduler.stopScheduler()
@@ -586,7 +586,7 @@ function Scheduler.stepScheduler()
 	while
 		scheduledObjectEntries[1] and scheduledObjectEntries[1].ExpiresAt <= currentTime
 	do
-		local poppedEntry: ScheduledObjectEntry = popRootScheduledObject(scheduledObjectEntries, objectToIndexMap)
+		const poppedEntry: ScheduledObjectEntry = popRootScheduledObject(scheduledObjectEntries, objectToIndexMap)
 		
 		destroyObject(poppedEntry.Object, poppedEntry.DestroyMethod)
 	end
@@ -614,15 +614,15 @@ function Scheduler.isScheduleEmpty() : boolean
 	return #scheduledObjectEntries == 0
 end
 
-local function newSpawner() : ()
+const function newSpawner() : ()
 	while true do
-		local callback: () -> () = coroutine.yield()
+		const callback: () -> () = coroutine.yield()
 		
 		callback()
 	end
 end
 
-local spawner: thread = coroutine.create(newSpawner)
+const spawner: thread = coroutine.create(newSpawner)
 coroutine.resume(spawner)
 
 --[[
@@ -670,9 +670,9 @@ Tome.Scheduler = Scheduler
 	Used internally by Tome to clean up scheduled groups.
 	
 ]]
-local function destroyGroup(self: any) : ()
+const function destroyGroup(self: any) : ()
 	for index: number = 1, #self do
-		local object: any = self[index]
+		const object: any = self[index]
 		
 		destroyObject(object, getDestroyMethodForObject(object))
 	end
@@ -682,7 +682,7 @@ type GroupMetamethods = {
 	__call: (self: any) -> (),
 }
 
-local GROUP_METAMETHODS: GroupMetamethods = {
+const GROUP_METAMETHODS: GroupMetamethods = {
 	__call = destroyGroup,
 }
 
@@ -702,15 +702,15 @@ export type Group<Tuple> = typeof(
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
 	
 	Tome.schedule(workspace.Part, 2.0) -- schedules the part to be destroyed after 2 seconds
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
 	
-	local part = Tome.schedule(workspace.Part2, 3) -- Scheduler uses generics to return the object afterwards for some useful cases
+	const part = Tome.schedule(workspace.Part2, 3) -- Scheduler uses generics to return the object afterwards for some useful cases
 	
 	Tome.schedule(function() -- you can insert any objects that go inside Tome as well, not just `Instance`s i.e. functions, threads, classes.
 		print("hello")
@@ -733,12 +733,12 @@ function Tome.schedule<object>(object: object, lifeTime: number, destroyMethod: 
 		Scheduler.startScheduler()
 	end
 	
-	local currentTime: number = os.clock()
-	local expirationTime: number = currentTime + lifeTime
+	const currentTime: number = os.clock()
+	const expirationTime: number = currentTime + lifeTime
 	
-	local existingObjectIndex: number = objectToIndexMap[object]
+	const existingObjectIndex: number = objectToIndexMap[object]
 	if existingObjectIndex then
-		local scheduledObjectEntry: ScheduledObjectEntry = scheduledObjectEntries[existingObjectIndex]
+		const scheduledObjectEntry: ScheduledObjectEntry = scheduledObjectEntries[existingObjectIndex]
 		
 		scheduledObjectEntry.ExpiresAt = expirationTime
 		
@@ -752,13 +752,13 @@ function Tome.schedule<object>(object: object, lifeTime: number, destroyMethod: 
 		return object
 	end
 	
-	local scheduledEntry: ScheduledObjectEntry = {
+	const scheduledEntry: ScheduledObjectEntry = {
 		Object = object,
 		DestroyMethod = destroyMethod or getDestroyMethodForObject(object),
 		ExpiresAt = expirationTime,
 	}
 	
-	local insertionIndex: number = #scheduledObjectEntries + 1
+	const insertionIndex: number = #scheduledObjectEntries + 1
 	
 	table.insert(scheduledObjectEntries, insertionIndex, scheduledEntry)
 	
@@ -780,9 +780,9 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
 	
-	local group: {Part} = Tome.group(workspace.Part, workspace.Part2)
+	const group: {Part} = Tome.group(workspace.Part, workspace.Part2)
 	
 	Tome.schedule(group, 2.0)
 	```
@@ -803,9 +803,9 @@ end
 	Removing the object doesn't clean up the object.
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
 	
-	local part: Part = workspace.Part
+	const part: Part = workspace.Part
 	
 	Tome.schedule(part, 3.0) --> schedules to destroy the part after 3 seconds
 	
@@ -816,12 +816,12 @@ end
 	
 ]]
 function Tome.unschedule<object>(object: object) : object
-	local existingObjectIndex: number? = objectToIndexMap[object]
+	const existingObjectIndex: number? = objectToIndexMap[object]
 	if not existingObjectIndex then
 		return object
 	end
 	
-	local hashSize: number = #scheduledObjectEntries
+	const hashSize: number = #scheduledObjectEntries
 	
 	scheduledObjectEntries[existingObjectIndex], scheduledObjectEntries[hashSize]
 		= scheduledObjectEntries[hashSize], scheduledObjectEntries[existingObjectIndex]
@@ -857,7 +857,7 @@ end
 function Tome.SetTag(self: Tome, tag: string?) : Tome
 	assert(type(tag) == "string", "Expected argument #1 'tag' to be a string type, or nil.")
 	
-	local oldTag: string? = self:GetTag()
+	const oldTag: string? = self:GetTag()
 	if oldTag then
 		for index: number, instance: Instance in CollectionService:GetTagged(oldTag) do
 			instance:RemoveTag(oldTag)
@@ -899,20 +899,20 @@ end
 	
 ]]
 function Tome.__connectTagRemoved(self: Tome) : ()
-	local tagRemovedConnection: RBXScriptConnection? = self.__tagRemovedConnection
+	const tagRemovedConnection: RBXScriptConnection? = self.__tagRemovedConnection
 	if tagRemovedConnection and tagRemovedConnection.Connected then
 		return
 	end
 	
-	local tag: string? = self:GetTag()
+	const tag: string? = self:GetTag()
 	if not tag then
 		return
 	end
 	
-	local function instanceRemoved(instance: Instance) : ()
+	const function instanceRemoved(instance: Instance) : ()
 		self.__objects[instance] = nil
 		
-		local objectExists: {Instance} = CollectionService:GetTagged(tag)
+		const objectExists: {Instance} = CollectionService:GetTagged(tag)
 		if #objectExists == 0 then
 			self:__disconnectTagRemovedConnection()
 		end
@@ -931,7 +931,7 @@ end
 	
 ]]
 function Tome.__disconnectTagRemovedConnection(self: Tome) : ()
-	local tagRemovedConnection: RBXScriptConnection? = self.__tagRemovedConnection
+	const tagRemovedConnection: RBXScriptConnection? = self.__tagRemovedConnection
 	if tagRemovedConnection and tagRemovedConnection.Connected then
 		tagRemovedConnection:Disconnect()
 		
@@ -969,9 +969,9 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
 	
-	local newTome = Tome.new()
+	const newTome = Tome.new()
 	newTome:Rename("Test")
 	
 	print(newTome:GetName()) --> "Test"
@@ -1008,11 +1008,11 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- construct a new Page for the Tome
-	local somePage = newTome:AddPage()
+	const somePage = newTome:AddPage()
 	
 	-- add an apple to the Page
 	somePage:Add(workspace.Apple)
@@ -1025,14 +1025,14 @@ end
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- construct a new Page for the Tome with a provided name
 	newTome:AddPage("SomeName")
 	
 	-- get the Page by name
-	local somePage = newTome:GetPage("SomeName")
+	const somePage = newTome:GetPage("SomeName")
 	```
 	
 ]]
@@ -1043,20 +1043,20 @@ function Tome.AddPage(self: Tome, name: string?, metaprops: Types.Metaprops?) : 
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add a Page to the Tome"))
 	end
 	
-	local keyNameToUse: string = name or HttpService:GenerateGUID(false)
+	const keyNameToUse: string = name or HttpService:GenerateGUID(false)
 	
-	local page: Tome? = self.__pages[keyNameToUse]
+	const page: Tome? = self.__pages[keyNameToUse]
 	if page then
 		throwError("Attempted to add a Page that already exists with the given name.")
 	end
 	
 	local newMetaprops: Types.Metaprops = {}
 	if not metaprops and self.__useParentMetaprops then
-		local FAST_ADD: boolean = self.__fastAdd
-		local SPAWN_DESTROY: boolean = self.__spawnDestroy
-		local WARNINGS: boolean = self.__warnings
-		local TAGGING: boolean = self.__tagging
-		local USE_PARENT_METAPROPS: boolean = self.__useParentMetaprops
+		const FAST_ADD: boolean = self.__fastAdd
+		const SPAWN_DESTROY: boolean = self.__spawnDestroy
+		const WARNINGS: boolean = self.__warnings
+		const TAGGING: boolean = self.__tagging
+		const USE_PARENT_METAPROPS: boolean = self.__useParentMetaprops
 		
 		newMetaprops = {
 			FastAdd = FAST_ADD,
@@ -1067,7 +1067,7 @@ function Tome.AddPage(self: Tome, name: string?, metaprops: Types.Metaprops?) : 
 		}
 	end
 	
-	local newPage: Tome = Tome.new(newMetaprops)
+	const newPage: Tome = Tome.new(newMetaprops)
 	newPage:Rename(name)
 	newPage.__parent = self
 	
@@ -1093,7 +1093,7 @@ Tome.Extend = Tome.AddPage
 ]]
 function Tome.__findPage(self: Tome, pageToFind: Tome) : (Tome?, Tome?)
 	-- TODO: Fix type issues once the new solver gets released
-	local subPages: {any} = {}
+	const subPages: {any} = {}
 	
 	for name: string, page: any in self.__pages do
 		if page == pageToFind then
@@ -1104,7 +1104,7 @@ function Tome.__findPage(self: Tome, pageToFind: Tome) : (Tome?, Tome?)
 	end
 	
 	for index: number, page: Tome in subPages do
-		local pageFound: Tome? = page:__findPage(pageToFind)
+		const pageFound: Tome? = page:__findPage(pageToFind)
 		if pageFound then
 			return pageFound, page
 		end
@@ -1122,10 +1122,10 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local somePage = newTome:AddPage()
+	const somePage = newTome:AddPage()
 	
 	print(newTome:GetParent()) -> ()
 	print(somePage:GetParent()) -> newTome
@@ -1150,7 +1150,7 @@ function Tome.__getLastParent(self: Tome) : Tome?
 	local latestParent: Tome? = self.__parent
 	
 	while latestParent do
-		local parent: Tome? = latestParent.__parent
+		const parent: Tome? = latestParent.__parent
 		if not parent then
 			return latestParent
 		end
@@ -1183,11 +1183,11 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
 	
-	local newTome = Tome.new()
+	const newTome = Tome.new()
 	
-	local somePage = newTome:AddPage("Demonstration")
+	const somePage = newTome:AddPage("Demonstration")
 	
 	print(newTome:GetPage("Demonstration")) -> Page(somePage)
 	
@@ -1202,23 +1202,23 @@ function Tome.RipPage(self: Tome, nameOrPage: string | Tome) : Tome
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "rip Page from the Tome"))
 	end
 	
-	local nameOrPageType: string = realTypeOf(nameOrPage)
+	const nameOrPageType: string = realTypeOf(nameOrPage)
 	if nameOrPageType == "Tome" then
-		local page: Tome?, parentPage: Tome? = self:__findPage(nameOrPage :: Tome)
+		const page: Tome?, parentPage: Tome? = self:__findPage(nameOrPage :: Tome)
 		if not page or not parentPage then
 			return throwError("Attempted to rip a Page that doesn't exist. Profiled using recursion")
 		end
 		
 		page:Destroy()
 		
-		local pageName: string? = page.__name
+		const pageName: string? = page.__name
 		if pageName then
 			parentPage.__pages[pageName] = nil
 		end
 		
 		return self
 	elseif nameOrPageType == "string" then
-		local page: Tome? = self.__pages[nameOrPage :: string]
+		const page: Tome? = self.__pages[nameOrPage :: string]
 		if not page then
 			return throwError("Attempted to rip a Page that doesn't exist. Profiled using a string")
 		end
@@ -1243,11 +1243,11 @@ end
 
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
 
-	local newTome = Tome.new()
+	const newTome = Tome.new()
 	
-	local somePage = newTome:AddPage("Demonstration")
+	const somePage = newTome:AddPage("Demonstration")
 
 	newTome:RipPages()
 
@@ -1272,16 +1272,16 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
 
-	local newTome = Tome.new()
+	const newTome = Tome.new()
 	
 	-- we need to access 'somePage' which is contained within another scope
 	do
-		local somePage = newTome:AddPage("Demonstration")
+		const somePage = newTome:AddPage("Demonstration")
 	end
 	
-	local somePage = newTome:GetPage("Demonstration")
+	const somePage = newTome:GetPage("Demonstration")
 	print(somePage) -> Page(somePage)
 	```
 
@@ -1308,13 +1308,13 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
 
-	local newTome = Tome.new()
-	local someOtherTome = Tome.new()
+	const newTome = Tome.new()
+	const someOtherTome = Tome.new()
 
 	-- initially create a Page within newTome
-	local somePage = newTome:AddPage("Demonstration")
+	const somePage = newTome:AddPage("Demonstration")
 
 	print(newTome:GetPage("Demonstration")) -> Page(somePage)
 	print(someOtherTome:GetPage("Demonstration")) -> nil
@@ -1328,7 +1328,7 @@ end
 
 ]]
 function Tome.Parent(self: Tome, newTome: Tome?) : Tome
-	local isTome: boolean = realTypeOf(newTome) == "Tome"
+	const isTome: boolean = realTypeOf(newTome) == "Tome"
 	assert(isTome or newTome == nil, "Expected argument #1 'newTome' to be a Tome type, or nil.")
 	
 	if self:IsDestroying() then
@@ -1339,12 +1339,12 @@ function Tome.Parent(self: Tome, newTome: Tome?) : Tome
 		throwError("Cannot add the current Tome to the newTome because the new Tome is in the middle of being destroyed.", "Ensure the new Tome is not destroying with Tome:IsDestroying.")
 	end
 	
-	local name: string? = self.__name
+	const name: string? = self.__name
 	if not name then
 		return self
 	end
 	
-	local parent: Tome? = self.__parent
+	const parent: Tome? = self.__parent
 	if parent then
 		self.__parent = nil
 		
@@ -1374,12 +1374,12 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
 
-	local newTome = Tome.new()
-	local someOtherTome = Tome.new()
+	const newTome = Tome.new()
+	const someOtherTome = Tome.new()
 
-	local somePage = newTome:AddPage("Demonstration")
+	const somePage = newTome:AddPage("Demonstration")
 
 	newTome:GivePage("Demonstration", someOtherTome)
 	```
@@ -1389,7 +1389,7 @@ function Tome.GivePage(self: Tome, pageName: string, newTome: Tome) : ()
 	assert(type(pageName) == "string", "Expected argument #1 to be a string type.")
 	assert(realTypeOf(newTome) == "Tome", "Expected argument #2 to be a Tome type.")
 	
-	local page: Tome? = self:GetPage(pageName)
+	const page: Tome? = self:GetPage(pageName)
 	if not page then
 		return
 	end
@@ -1414,11 +1414,11 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
-	local someOtherTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
+	const someOtherTome = Tome.new()
 	
-	local apple = workspace.Apple
+	const apple = workspace.Apple
 	newTome:Add(apple)
 	
 	print(newTome:Contains(apple)) -- true
@@ -1438,7 +1438,7 @@ function Tome.Move<object>(self: Tome, object: object, otherTome: Tome) : object
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "move object to another Tome"))
 	end
 	
-	local destroyMethod: DestroyMethod? = self.__objects[object]
+	const destroyMethod: DestroyMethod? = self.__objects[object]
 	if not destroyMethod then
 		return object
 	end
@@ -1460,15 +1460,15 @@ end
 	signficantly slower with metatables (especially double-indexing)
 	
 ]]
-local function validateObject(object: any, tome: Tome) : ()
-	local objectType: string = realTypeOf(object)
-	local objectIsTome: boolean = objectType == "Tome"
+const function validateObject(object: any, tome: Tome) : ()
+	const objectType: string = realTypeOf(object)
+	const objectIsTome: boolean = objectType == "Tome"
 	if objectIsTome then
 		if object == tome then
 			throwError("Attempted to add current Tome (self) to the current Tome (self) Upon calling :Destroy, indefinite recursion will occur", "Ensure that the Tome isn't added into itself.")
 		end
 		
-		local lastParent: Tome? = tome:__getLastParent()
+		const lastParent: Tome? = tome:__getLastParent()
 		if lastParent == object then
 			throwError("Attempted to add a Tome which is an ancestor Tome of the current Tome (self)", "Ensure no ancestor Tomes are added to the Tome.")
 		end
@@ -1487,7 +1487,7 @@ local function validateObject(object: any, tome: Tome) : ()
 		-- tomeTag will only have a string if tagging was enabled during instantiation
 		-- if somewhere down the line metaprops can be updated after instantiation
 		-- this code will need to be updated to comply
-		local tomeTag: string? = tome:GetTag()
+		const tomeTag: string? = tome:GetTag()
 		if tomeTag then
 			object:AddTag(tomeTag)
 		end
@@ -1529,35 +1529,35 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local cube = newTome:Add(workspace.Cube)
+	const cube = newTome:Add(workspace.Cube)
 	
 	-- will destroy the cube
 	newTome:Destroy()
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- Giving in a custom destroy method, in this case "Destroy"
 	-- which will be called on the cube as a function
-	local cube = newTome:Add(workspace.Cube, "Destroy")
+	const cube = newTome:Add(workspace.Cube, "Destroy")
 	
 	-- will destroy the cube
 	newTome:Destroy()
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- Giving in another custom method, in this case a function.
 	-- This function will be called when the Tome is destroyed,
 	-- giving in the object as the first argument to allow you to destroy the object however you like
-	local cube = newTome:Add(workspace.Cube, function(cube: BasePart)
+	const cube = newTome:Add(workspace.Cube, function(cube: BasePart)
 		cube:Destroy()
 	end)
 	
@@ -1595,7 +1595,7 @@ end
 	
 	Example(s):
 	```luau
-	local newTome: Tome.Tome = Tome.new()
+	const newTome: Tome.Tome = Tome.new()
 	
 	newTome:AddFromDictionary({
 		[workspace.Part] = Tome.Guess,
@@ -1613,7 +1613,7 @@ function Tome.AddFromDictionary(self: Tome, dictionary: ObjectDictionary) : Obje
 	
 	assert(type(dictionary) == "table", "Expected argument #1 'dictionary' to be a table type.")
 	
-	local FAST_ADD: boolean = self.__fastAdd
+	const FAST_ADD: boolean = self.__fastAdd
 	
 	if FAST_ADD then
 		for object: any, destroyMethod: DestroyMethod | {name: string} in dictionary do
@@ -1632,7 +1632,7 @@ function Tome.AddFromDictionary(self: Tome, dictionary: ObjectDictionary) : Obje
 	return dictionary
 end
 
-local MIDDLEWARE_WARNING_TEMPLATE: string = "\n\nCaught error during middleware function: %*"
+const MIDDLEWARE_WARNING_TEMPLATE: string = "\n\nCaught error during middleware function: %*"
 
 --[[
 	
@@ -1663,8 +1663,8 @@ local MIDDLEWARE_WARNING_TEMPLATE: string = "\n\nCaught error during middleware 
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:AddWithMiddleware(workspace.Part, function(object: Part)
 		for transparency: number = 0, 1, 0.1 do
@@ -1676,8 +1676,8 @@ local MIDDLEWARE_WARNING_TEMPLATE: string = "\n\nCaught error during middleware 
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:AddWithMiddleware(
 		workspace.Part,
@@ -1701,8 +1701,8 @@ function Tome.AddWithMiddleware<object>(
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add with middleware to the Tome"))
 	end
 	
-	local function destroyWithMiddleware(object: object) : ()
-		local success: boolean, result: string? = pcall(middleware, object)
+	const function destroyWithMiddleware(object: object) : ()
+		const success: boolean, result: string? = pcall(middleware, object)
 		if not success and self.__warnings then
 			warn(string.format(MIDDLEWARE_WARNING_TEMPLATE, result))
 		end
@@ -1753,11 +1753,11 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- adds the apple, banana and pear to the Tome
-	local apple, banana, pear = newTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
+	const apple, banana, pear = newTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
 	
 	-- will destroy the apple, banana and pear
 	newTome:Destroy()
@@ -1769,7 +1769,7 @@ function Tome.AddTuple<object...>(self: Tome, ...) : object...
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add tuple objects to the Tome"))
 	end
 	
-	local FAST_ADD: boolean = self.__fastAdd
+	const FAST_ADD: boolean = self.__fastAdd
 	
 	if FAST_ADD then
 		for index: number, object: any in {...} do
@@ -1798,13 +1798,13 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local objectsToAdd = {workspace.Apple, workspace.Banana, workspace.Pear}
+	const objectsToAdd = {workspace.Apple, workspace.Banana, workspace.Pear}
 	
 	-- adds the apple, banana and pear to the Tome
-	local returnedObjects = newTome:AddFromArray(fruits)
+	const returnedObjects = newTome:AddFromArray(fruits)
 	
 	-- will destroy the apple, banana and pear
 	newTome:Destroy()
@@ -1818,7 +1818,7 @@ function Tome.AddFromArray<objectsArray>(self: Tome, objectsArray: objectsArray)
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add objects from array"))
 	end
 	
-	local FAST_ADD: boolean = self.__fastAdd
+	const FAST_ADD: boolean = self.__fastAdd
 	
 	if FAST_ADD then
 		for index: number, object: any in objectsArray do
@@ -1862,9 +1862,9 @@ function Tome.AddPromise(self: Tome, promise: Types.Promise) : Types.Promise -- 
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add Promise"))
 	end
 	
-	local typedPromise: Types.Promise = promise
+	const typedPromise: Types.Promise = promise
 	
-	local status: string = string.lower(typedPromise:getStatus())
+	const status: string = string.lower(typedPromise:getStatus())
 	if status == "started" then
 		typedPromise:finally(function()
 			self.__objects[typedPromise] = nil
@@ -1894,10 +1894,10 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local cube = newTome:Add(workspace.Cube)
+	const cube = newTome:Add(workspace.Cube)
 	
 	-- remove the cube from the Tome
 	newTome:Remove(cube)
@@ -1913,7 +1913,7 @@ function Tome.Remove<object>(self: Tome, object: object) : object
 	end
 	
 	if typeof(object) == "Instance" then
-		local tomeTag: string? = self:GetTag()
+		const tomeTag: string? = self:GetTag()
 		if tomeTag then
 			object:RemoveTag(tomeTag)
 		end
@@ -1940,10 +1940,10 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local apple, banana, pear = newTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
+	const apple, banana, pear = newTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
 	
 	-- don't include the pear
 	newTome:RemoveTuple(apple, banana)
@@ -1981,10 +1981,10 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local objects = {workspace.Apple, workspace.Banana, workspace.Pear}
+	const objects = {workspace.Apple, workspace.Banana, workspace.Pear}
 	
 	-- adds the apple, banana and pear
 	newTome:AddFromArray(objects)
@@ -2023,11 +2023,11 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- add a tag to the cube
-	local cube = workspace.Cube
+	const cube = workspace.Cube
 	cube:AddTag("SomeTag")
 	
 	-- add the cube to the Tome
@@ -2045,7 +2045,7 @@ function Tome.RemoveObjectsWithTag(self: Tome, tag: string) : ()
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "remove objects with tag"))
 	end
 	
-	local objectsWithTag: {any} = self:GetObjectsWithTag(tag)
+	const objectsWithTag: {any} = self:GetObjectsWithTag(tag)
 	
 	self:RemoveFromArray(objectsWithTag)
 end
@@ -2064,11 +2064,11 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local cube = workspace.Cube -- "Part"
-	local someModel = workspace.SomeModel -- "Model"
+	const cube = workspace.Cube -- "Part"
+	const someModel = workspace.SomeModel -- "Model"
 	
 	-- add the objects to the Tome
 	newTome:AddTuple(cube, someModel)
@@ -2088,7 +2088,7 @@ function Tome.RemoveObjectsOfType(self: Tome, typeName: string) : ()
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "remove objects of class"))
 	end
 	
-	local objectsOfType: {any} = self:GetObjectsOfType(typeName)
+	const objectsOfType: {any} = self:GetObjectsOfType(typeName)
 	
 	self:RemoveFromArray(objectsOfType)
 end
@@ -2106,12 +2106,12 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local Players = game:GetService("Players")
+	const Players = game:GetService("Players")
 	
-	local function playerAdded(player: Player)
+	const function playerAdded(player: Player)
 		print(string.format("Welcome! %s", player.DisplayName))
 	end
 	
@@ -2131,7 +2131,7 @@ function Tome.Connect(self: Tome, signal: any, listener: (...any) -> ...any) : a
 		throwError(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "connect to a signal"))
 	end
 	
-	local realType: string = typeof(signal)
+	const realType: string = typeof(signal)
 	if realType == "RBXScriptSignal" then
 		return self:FastAdd(signal:Connect(listener), "Disconnect" :: DestroyMethod?)
 	end
@@ -2154,12 +2154,12 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local Players = game:GetService("Players")
+	const Players = game:GetService("Players")
 	
-	local function playerAdded(player: Player) : ()
+	const function playerAdded(player: Player) : ()
 		print(string.format("The first player to join was: %*", player.Name))
 	end
 	
@@ -2174,7 +2174,7 @@ function Tome.Once(self: Tome, signal: RBXScriptSignal, listener: (...any) -> (.
 		throwError(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "connect once to a signal"))
 	end
 	
-	local realType: string = typeof(signal)
+	const realType: string = typeof(signal)
 	if realType == "RBXScriptSignal" then
 		return self:FastAdd(signal:Once(listener), "Disconnect" :: DestroyMethod?)
 	end
@@ -2199,25 +2199,25 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local SomeClass = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
+	const SomeClass = require("../Path/To/Tome")
 	
-	local newTome = Tome.new()
+	const newTome = Tome.new()
 	
-	local class = newTome:Construct(SomeClass, "Apple", "Banana", "Pear")
+	const class = newTome:Construct(SomeClass, "Apple", "Banana", "Pear")
 	
 	-- will destroy the class object
 	newTome:Destroy()
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local SomeClass = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
+	const SomeClass = require("../Path/To/Tome")
 	
-	local newTome = Tome.new()
+	const newTome = Tome.new()
 	
 	-- using the class constructor function as the first argument
-	local class = newTome:Construct(SomeClass.new, "Apple", "Banana", "Pear")
+	const class = newTome:Construct(SomeClass.new, "Apple", "Banana", "Pear")
 	
 	-- will destroy the class object
 	newTome:Destroy()
@@ -2229,10 +2229,10 @@ function Tome.Construct(self: Tome, class: any, ...: any) : any
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "construct a class"))
 	end
 	
-	local classType: string = type(class)
+	const classType: string = type(class)
 	if classType == "table" then
-		local constructFunction: (() -> ())? = class.new
-		local functionType: string = type(constructFunction)
+		const constructFunction: (() -> ())? = class.new
+		const functionType: string = type(constructFunction)
 		
 		if functionType == "function" and constructFunction then
 			return self:FastAdd(constructFunction(...), nil)
@@ -2260,17 +2260,17 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local SomeClass = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
+	const SomeClass = require("../Path/To/Tome")
 	
-	local newTome = Tome.new()
+	const newTome = Tome.new()
 	
 	-- add the apple to the Tome
 	newTome:Add(workspace.Apple)
 	print(newTome:Has(workspace.Apple)) -> true
 	
 	-- duplicate the Tome
-	local duplicateTome = newTome:Duplicate()
+	const duplicateTome = newTome:Duplicate()
 	print(duplicateTome:Has(workspace.Apple)) -> true
 	
 	-- destroys the apple as it existed within the duplicate Tome
@@ -2286,7 +2286,7 @@ function Tome.Duplicate(self: Tome) : Tome
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "duplicate the Tome"))
 	end
 	
-	local duplicateTome: Tome = Tome.new({
+	const duplicateTome: Tome = Tome.new({
 		FastAdd = self.__fastAdd,
 		SpawnDestroy = self.__spawnDestroy,
 		Warnings = self.__warnings,
@@ -2317,23 +2317,23 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local duplicateCube = newTome:Clone(workspace.Cube)
+	const duplicateCube = newTome:Clone(workspace.Cube)
 	
 	-- will destroy the duplicate cube
 	newTome:Destroy()
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local SomeClass = require("../Path/To/Tome")
+	const Tome = require("../Path/To/Tome")
+	const SomeClass = require("../Path/To/Tome")
 	
-	local newTome = Tome.new()
+	const newTome = Tome.new()
 	
-	local class = newTome:Construct(SomeClass.new)
-	local duplicateClass = newTome:Clone(class)
+	const class = newTome:Construct(SomeClass.new)
+	const duplicateClass = newTome:Clone(class)
 	
 	-- both the class and duplicate class will be destroyed
 	newTome:Destroy()
@@ -2345,15 +2345,15 @@ function Tome.Clone(self: Tome, object: any, extendFunctionName: string?) : any
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "clone an object"))
 	end
 	
-	local objectType: string = typeof(object)
+	const objectType: string = typeof(object)
 	if objectType == "table" then
-		local extensionFunction: ((object: any) -> ())? = extendFunctionName and object[extendFunctionName]
+		const extensionFunction: ((object: any) -> ())? = extendFunctionName and object[extendFunctionName]
 		if extensionFunction then
 			return self:FastAdd(extensionFunction(object), nil :: DestroyMethod?)
 		end
 		
 		for index: number, extensionName: string in EXTENSION_METHOD_NAMES do
-			local extension: ((object: any) -> ())? = object[extensionName]
+			const extension: ((object: any) -> ())? = object[extensionName]
 			if extension then
 				return self:FastAdd(extension(object), nil)
 			end
@@ -2361,7 +2361,7 @@ function Tome.Clone(self: Tome, object: any, extendFunctionName: string?) : any
 		
 		return throwError("Attempted to clone a table (most likely a class) however the table doesn't contain an extension/clone method.", "Ensure the provided class has en extension method. If it does, add it to the extension list at the top of the module.")
 	elseif objectType == "Instance" then
-		local clonedObject: any = object:Clone()
+		const clonedObject: any = object:Clone()
 		if not self.__fastAdd then
 			validateObject(clonedObject, self :: Tome)
 		end
@@ -2374,7 +2374,7 @@ function Tome.Clone(self: Tome, object: any, extendFunctionName: string?) : any
 	error(string.format("Failed to clone object: %s", tostring(object)))
 end
 
-local INSTANCE_FORMAT_STRING: string = "\n\tAttempted to set property '%s' to an Instance created by Tome.\n\tReason: %*"
+const INSTANCE_FORMAT_STRING: string = "\n\tAttempted to set property '%s' to an Instance created by Tome.\n\tReason: %*"
 
 --[[
 	
@@ -2397,10 +2397,10 @@ local INSTANCE_FORMAT_STRING: string = "\n\tAttempted to set property '%s' to an
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local part = newTome:Instance("Part")
+	const part = newTome:Instance("Part")
 	part.Parent = workspace
 	
 	task.wait(2)
@@ -2409,10 +2409,10 @@ local INSTANCE_FORMAT_STRING: string = "\n\tAttempted to set property '%s' to an
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local part = newTome:Instance("Part", {
+	const part = newTome:Instance("Part", {
 		Color = Color3.new(1, 1, 1),
 		Size = Vector3.one,
 		Parent = workspace,
@@ -2425,8 +2425,8 @@ local INSTANCE_FORMAT_STRING: string = "\n\tAttempted to set property '%s' to an
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- will throw an error as "Apple" isn't an actual instance type
 	newTome:Instance("Apple")
@@ -2441,7 +2441,7 @@ function Tome.Instance(self: Tome, instanceName: string, properties: {[string]: 
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "create an Instance"))
 	end
 	
-	local result: Instance = Instance.new(instanceName)
+	const result: Instance = Instance.new(instanceName)
 	if not self.__fastAdd then
 		validateObject(result, self)
 	end
@@ -2489,7 +2489,7 @@ function Tome.FromExisting(self: Tome, instance: Instance, destroyMethod: Destro
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "create an Instance from existing"))
 	end
 	
-	local fromExisting: Instance = Instance.fromExisting(instance)
+	const fromExisting: Instance = Instance.fromExisting(instance)
 	if not self.__fastAdd then
 		validateObject(fromExisting, self)
 	end
@@ -2524,10 +2524,10 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local cube = workspace.Cube
+	const cube = workspace.Cube
 	
 	-- attach the Tome to the cube
 	newTome:Attach(cube)
@@ -2538,7 +2538,7 @@ end
 	
 ]]
 function Tome.Attach(self: Tome, object: any) : Attachment?
-	local objectType: string = realTypeOf(object)
+	const objectType: string = realTypeOf(object)
 	
 	if objectType == "Tome" then
 		return object:Add(self:WrapDestroy(), FunctionType)
@@ -2551,7 +2551,7 @@ function Tome.Attach(self: Tome, object: any) : Attachment?
 		local wasDestroyed: boolean = false
 		local wasNulled: boolean = false
 		
-		local destroyingConnection: RBXScriptConnection = object.Destroying:Connect(function()
+		const destroyingConnection: RBXScriptConnection = object.Destroying:Connect(function()
 			if wasDestroyed or wasNulled then
 				return
 			end
@@ -2561,8 +2561,8 @@ function Tome.Attach(self: Tome, object: any) : Attachment?
 			self:Destroy()
 		end)
 		
-		local ancestryConnection: RBXScriptConnection = object.AncestryChanged:Connect(function()
-			local descendantOfGame: boolean = object:IsDescendantOf(game)
+		const ancestryConnection: RBXScriptConnection = object.AncestryChanged:Connect(function()
+			const descendantOfGame: boolean = object:IsDescendantOf(game)
 			if descendantOfGame then
 				return
 			end
@@ -2613,14 +2613,14 @@ end
 	Tome doesn't automatically add the clean up function into itself, if you need that behaviour, wrap
 	the clean up function as such:
 	```luau
-	local cleanUp: () -> () = newTome:AttachTuple(workspace.Cube, workspace.Cube2)
+	const cleanUp: () -> () = newTome:AttachTuple(workspace.Cube, workspace.Cube2)
 	newTome:FastAdd(cleanUp, Tome.FunctionType)
 	```
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:AttachTuple(workspace.Cube, workspace.Cube2)
 	newTome:Add(function()
@@ -2631,11 +2631,11 @@ end
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- use the variable to get the attachments
-	local cleanUpAttachments: () -> () = newTome:AttachTuple(workspace.Cube, workspace.Cube2)
+	const cleanUpAttachments: () -> () = newTome:AttachTuple(workspace.Cube, workspace.Cube2)
 	
 	newTome:Add(function()
 		print("Either cube, or cube2 was destroyed!")
@@ -2649,11 +2649,11 @@ end
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- use the variable to get the attachments
-	local cleanUpAttachments: () -> (), attachments: {any} = newTome:AttachTuple(workspace.Cube, workspace.Cube2)
+	const cleanUpAttachments: () -> (), attachments: {any} = newTome:AttachTuple(workspace.Cube, workspace.Cube2)
 	
 	newTome:Add(function()
 		print("Either cube, or cube2 was destroyed!")
@@ -2667,10 +2667,10 @@ end
 	
 ]]
 function Tome.AttachTuple(self: Tome, ...: any) : (() -> (), {Attachment})
-	local attachments: {Attachment} = self:Table({})
+	const attachments: {Attachment} = self:Table({})
 	
 	for index: number, object: any in {...} do
-		local attachment: Attachment? = self:Attach(object)
+		const attachment: Attachment? = self:Attach(object)
 		if not attachment then
 			continue
 		end
@@ -2705,10 +2705,10 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local apple, banana, pear = workspace.Apple, workspace.Banana, workspace.Pear
+	const apple, banana, pear = workspace.Apple, workspace.Banana, workspace.Pear
 	
 	-- add all the fruits
 	newTome:AddTuple(apple, banana, pear)
@@ -2729,7 +2729,7 @@ function Tome.DestroyObjectsWithTag(self: Tome, tag: string) : ()
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, string.format("destroy objects with tag: %s", tag)))
 	end
 	
-	local collectedObjects: {Instance} = self:GetObjectsWithTag(tag)
+	const collectedObjects: {Instance} = self:GetObjectsWithTag(tag)
 	for index: number, object: Instance in collectedObjects do
 		self:DestroyObject(object)
 	end
@@ -2747,8 +2747,8 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- the apple is a model
 	newTome:Add(workspace.Apple)
@@ -2768,7 +2768,7 @@ function Tome.DestroyObjectsOfType(self: Tome, typeName: string) : ()
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, string.format("destroy objects of class: %s", typeName)))
 	end
 	
-	local collectedObjects: {any} = self:GetObjectsOfType(typeName)
+	const collectedObjects: {any} = self:GetObjectsOfType(typeName)
 	for index: number, object: any in collectedObjects do
 		self:DestroyObject(object)
 	end
@@ -2786,8 +2786,8 @@ end
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:HookRunServiceSignal("RenderStepped", function(deltaTime: number)
 		print(`[RenderStepped]: Time spent: {deltaTime}`)
@@ -2803,12 +2803,12 @@ function Tome.HookRunServiceSignal(self: Tome, signalName: RunServiceSignalName,
 	assert(type(signalName) == "string", "Expected argument #1 'signalName' to be a string type.")
 	assert(type(listener) == "function", "Expected argument #2 'listener' to be a function type.")
 	
-	local signal: RBXScriptSignal = assert((RunService :: any)[signalName], "Expected a RunService signal but got nil")
+	const signal: RBXScriptSignal = assert((RunService :: any)[signalName], "Expected a RunService signal but got nil")
 	
 	return self:Connect(signal, listener)
 end
 
-local RENDER_STEP_METAMETHODS = {
+const RENDER_STEP_METAMETHODS = {
 	__call = function(self: RenderStepBinding)
 		RunService:UnbindFromRenderStep(self.name)
 		
@@ -2840,10 +2840,10 @@ local RENDER_STEP_METAMETHODS = {
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local unbind: () -> () = newTome:BindRenderStepped("STEP", 1, function(deltaTime: number)
+	const unbind: () -> () = newTome:BindRenderStepped("STEP", 1, function(deltaTime: number)
 		print(`Time spent stepping... {deltaTime}`)
 	end)
 	
@@ -2863,7 +2863,7 @@ function Tome.BindRenderStepped(self: Tome, name: string, renderPriority: number
 	
 	RunService:BindToRenderStep(name, renderPriority or 1, listener)
 	
-	local object: RenderStepBinding = {
+	const object: RenderStepBinding = {
 		name = name,
 		owner = self,
 	}
@@ -2891,8 +2891,8 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:BindRenderStepped("Test", 1, function(deltaTime: number)
 		print(`Time spent: {deltaTime}`)
@@ -2935,8 +2935,8 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	someTime:Delay(3, function()
 		print("Destroyed the Tome")
@@ -2954,7 +2954,7 @@ function Tome.Delay<vargs>(self: Tome, duration: number, listener: (...vargs) ->
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "delay a thread"))
 	end
 	
-	local delayedThread: thread = task.delay(duration, listener, ...)
+	const delayedThread: thread = task.delay(duration, listener, ...)
 	
 	self.__objects[delayedThread] = ThreadType
 	
@@ -2977,8 +2977,8 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	someTime:Spawn(function()
 		while true do
@@ -3002,7 +3002,7 @@ function Tome.Spawn<vargs>(self: Tome, listener: (...vargs) -> ...any, ...: varg
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "spawn a thread"))
 	end
 	
-	local spawnedThread: thread = task.spawn(listener, ...)
+	const spawnedThread: thread = task.spawn(listener, ...)
 	
 	self.__objects[spawnedThread] = ThreadType
 	
@@ -3031,7 +3031,7 @@ function Tome.Defer<vargs>(self: Tome, listener: (...vargs) -> ...any, ...: varg
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "defer a thread"))
 	end
 	
-	local deferredThread: thread = task.defer(listener, ...)
+	const deferredThread: thread = task.defer(listener, ...)
 	
 	self.__objects[deferredThread] = ThreadType
 	
@@ -3051,8 +3051,8 @@ end
 
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	print("This prints instantly")
 
@@ -3064,7 +3064,7 @@ end
 
 ]]
 function Tome.Yield(self: Tome, thread: thread?) : ()
-	local currentThread: thread = thread or coroutine.running()
+	const currentThread: thread = thread or coroutine.running()
 	
 	self.__objects[currentThread] = coroutine.resume
 	
@@ -3081,18 +3081,18 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- check if the cube exists initially, which it doesn't
-	local exists: boolean = newTome:Contains(workspace.Cube)
+	const exists: boolean = newTome:Contains(workspace.Cube)
 	print(exists) -- false
 	
 	-- so we add the cube to the Tome
 	newTome:Add(workspace.Cube)
 	
 	-- and now that the cube has been added, true is returned
-	local exists: boolean = newTome:Contains(workspace.Cube)
+	const exists: boolean = newTome:Contains(workspace.Cube)
 	print(exists) -- true
 	```
 	
@@ -3115,10 +3115,10 @@ Tome.Has = Tome.Contains
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local signal = newTome:Signal()
+	const signal = newTome:Signal()
 	
 	signal:Connect(function(argument: string)
 		print(argument)
@@ -3137,7 +3137,7 @@ function Tome.Signal(self: Tome) : Signal.Signal
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "construct a Signal"))
 	end
 	
-	local signal: Signal.Signal = Signal.new()
+	const signal: Signal.Signal = Signal.new()
 	
 	self.__objects[signal] = Signal.Destroy
 	
@@ -3159,10 +3159,10 @@ end
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local myTable: {[any]: any} = newTome:Table({})
+	const myTable: {[any]: any} = newTome:Table({})
 	
 	print(myTable)
 	```
@@ -3173,7 +3173,7 @@ function Tome.Table(self: Tome, existing: {[any]: any}?) : {[any]: any}
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "add a table"))
 	end
 	
-	local tableToUse: {[any]: any} = existing or {}
+	const tableToUse: {[any]: any} = existing or {}
 	
 	self.__objects[tableToUse] = table.clear
 	
@@ -3201,12 +3201,12 @@ end
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local tween: Tween = newTome:Tween(workspce.Cube, TweenInfo.new(1), { Size = Vector3.one * 4 }, { Play = true })
+	const tween: Tween = newTome:Tween(workspce.Cube, TweenInfo.new(1), { Size = Vector3.one * 4 }, { Play = true })
 
-	local function completed() : ()
+	const function completed() : ()
 		print("Finished tween")
 	end
 
@@ -3230,14 +3230,14 @@ function Tome.Tween(
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "create a Tween"))
 	end
 	
-	local tween: Tween = TweenService:Create(instance, tweenInfo, propertyTable)
+	const tween: Tween = TweenService:Create(instance, tweenInfo, propertyTable)
 	
 	self.__objects[tween] = TweenType
 	
 	if metadata then
 		if metadata.RemoveOnComplete then
-			local function tweenCompleted(playbackState: Enum.PlaybackState) : ()
-				local tweenEnded: boolean = playbackState == Enum.PlaybackState.Completed
+			const function tweenCompleted(playbackState: Enum.PlaybackState) : ()
+				const tweenEnded: boolean = playbackState == Enum.PlaybackState.Completed
 					or playbackState == Enum.PlaybackState.Cancelled
 				
 				if tweenEnded then
@@ -3271,20 +3271,20 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local apple, banana = newTome:AddTuple(workspace.Apple, workspace.Banana)
+	const apple, banana = newTome:AddTuple(workspace.Apple, workspace.Banana)
 	
 	-- the apple will be destroyed
 	newTome:DestroyObject(apple)
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local banana = workspace.Banana
+	const banana = workspace.Banana
 	
 	-- nothing will happen bceause the banana isn't inside the Tome
 	newTome:DestroyObject(banana)
@@ -3296,8 +3296,8 @@ function Tome.DestroyObject(self: Tome, object: any) : boolean
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "destroy object"))
 	end
 	
-	local objects: {[any]: DestroyMethod} = self.__objects
-	local destroyMethod: DestroyMethod? = objects[object]
+	const objects: {[any]: DestroyMethod} = self.__objects
+	const destroyMethod: DestroyMethod? = objects[object]
 	if not destroyMethod then
 		return false
 	end
@@ -3326,10 +3326,10 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local apple, banana, pear = newTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
+	const apple, banana, pear = newTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
 	
 	-- will only destroy the apple and banana
 	newTome:DestroyTuple(apple, banana)
@@ -3356,8 +3356,8 @@ end
 	so.
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- this function contains a yield that will pause the Tome for 2 seconds
 	newTome:Add(function()
@@ -3387,8 +3387,8 @@ end
 	Returns whether or not the Tome is currently destroying.
 
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	if newTome:IsDestroying() then
 		-- do nothing
@@ -3411,8 +3411,8 @@ end
 	the objects and not destroy them directly.
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:AddTuple(workspace.Apple, workspace.Banana)
 	
@@ -3432,8 +3432,8 @@ end
 	Returns the total amount of objects currectly inside the Tome
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:AddTuple(workspace.Apple, workspace.Banana, workspace.Pear)
 	
@@ -3444,7 +3444,7 @@ end
 function Tome.Count(self: Tome) : number
 	local count: number = 0
 	
-	local objects: {[any]: DestroyMethod} = self.__objects
+	const objects: {[any]: DestroyMethod} = self.__objects
 	for object: any in objects do
 		count += 1
 	end
@@ -3464,27 +3464,27 @@ end
 	is equal to the type provided. Then the table will be included in the array.
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:Add(workspace.Apple)
 	newTome:Connect(workspace.ChildAdded, print)
 	newTome:Add(function() end)
 	
-	local objects = newTome:GetObjectsOfType("function")
+	const objects = newTome:GetObjectsOfType("function")
 	print(objects) -> {[1] = function(REF)}
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:Add(workspace.Apple)
 	newTome:Connect(workspace.ChildAdded, print)
 	newTome:Tween(workspace.Cube, TweenInfo.new(5), { Size = Vector3.one })
 	newTome:Tween(workspace.AnotherCube, TweenInfo.new(5), { Size = Vector3.one })
 	
-	local objects = newTome:GetObjectsOfType("Tween")
+	const objects = newTome:GetObjectsOfType("Tween")
 	print(objects) -> {[1] = Instance(Tween,REF), [2] = Instance(Tween,REF)}
 	```
 	
@@ -3492,11 +3492,11 @@ end
 function Tome.GetObjectsOfType(self: Tome, typeName: string) : {any}
 	assert(type(typeName) == "string", "Expected argument #1 'typeName' to be a string type.")
 	
-	local objects: {[any]: DestroyMethod} = self.__objects
-	local collectedObjects: {any} = {}
+	const objects: {[any]: DestroyMethod} = self.__objects
+	const collectedObjects: {any} = {}
 	
 	for object: any in objects do
-		local objectType: string = realTypeOf(object)
+		const objectType: string = realTypeOf(object)
 		
 		if objectType == "Instance" and object:IsA(typeName)
 			or objectType == "table" and object.__type == objectType
@@ -3519,14 +3519,14 @@ end
 	internally, but may prove to be useful in certain cases.
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- set a custom tag (internally will be randomized if not set)
 	newTome:SetTag("Demonstration")
 
 	-- add the tag we just created
-	local ourTag: string = newTome:GetTag()
+	const ourTag: string = newTome:GetTag()
 	workspace.Cube:AddTag(ourTag)
 
 	print(newTome:GetObjectsWithTag(ourTag)) -> {Instance(Part, REF)}
@@ -3536,8 +3536,8 @@ end
 function Tome.GetObjectsWithTag(self: Tome, tag: string) : {Instance}
 	assert(type(tag) == "string", "Expected argument #1 'tag' to be a string type.")
 	
-	local objects: {[any]: DestroyMethod} = self.__objects
-	local collectedObjects: {Instance} = {}
+	const objects: {[any]: DestroyMethod} = self.__objects
+	const collectedObjects: {Instance} = {}
 	
 	for object: any in objects do
 		if typeof(object) == "Instance" and object:HasTag(tag) then
@@ -3560,11 +3560,11 @@ end
 	the ignoreDestroyingProperty argument is set to true.
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- construct a new Page and add an "apple" object to it
-	local somePage = newTome:AddPage()
+	const somePage = newTome:AddPage()
 	somePage:Add(workspace.Apple)
 	
 	-- add a "banana" object to the main Tome
@@ -3580,14 +3580,14 @@ function Tome.DestroyAllObjects(self: Tome, __ignoreDestroyingProperty: boolean?
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "destroy all objects"))
 	end
 	
-	local objects: {[any]: DestroyMethod} = self.__objects
+	const objects: {[any]: DestroyMethod} = self.__objects
 	
-	local spawnDestroy: boolean = self.__spawnDestroy
-	local warnings: boolean = self.__warnings
+	const spawnDestroy: boolean = self.__spawnDestroy
+	const warnings: boolean = self.__warnings
 	
 	if spawnDestroy then
 		for object: any, destroyMethod: any in objects do
-			local success: boolean, result: any = pcall(task.spawn, destroyObject, object, destroyMethod)
+			const success: boolean, result: any = pcall(task.spawn, destroyObject, object, destroyMethod)
 			
 			if not success and warnings then
 				failedToDestroyObject(object, result)
@@ -3595,7 +3595,7 @@ function Tome.DestroyAllObjects(self: Tome, __ignoreDestroyingProperty: boolean?
 		end
 	else
 		for object: any, destroyMethod: any in objects do
-			local success: boolean, result: any = pcall(destroyObject, object, destroyMethod)
+			const success: boolean, result: any = pcall(destroyObject, object, destroyMethod)
 			
 			if not success and warnings then
 				failedToDestroyObject(object, result)
@@ -3619,12 +3619,12 @@ end
 	the ignoreDestroyingProperty argument is set to true.
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 
 	newTome:Add(workspace.Cube)
 	
-	local somePage = newTome:AddPage()
+	const somePage = newTome:AddPage()
 	somePage:Add(workspace.Cube2)
 	
 	newTome:DestroyAllPages()
@@ -3658,8 +3658,8 @@ end
 	Will throw an error if the Tome is in the middle of being destroyed.
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:Add(workspace.Apple)
 	
@@ -3668,12 +3668,12 @@ end
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:Add(workspace.Apple)
 	
-	local tomeDestroyThread: thread = newTome:DelayDestroy(5)
+	const tomeDestroyThread: thread = newTome:DelayDestroy(5)
 	
 	task.wait(2)
 	
@@ -3701,10 +3701,10 @@ end
 	Useful in cases where you need a *cleaner* function within another library or system.
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local destroyTome: () -> () = newTome:WrapDestroy()
+	const destroyTome: () -> () = newTome:WrapDestroy()
 	
 	-- destroys the Tome as though invoking Tome:Destroy
 	destroyTome()
@@ -3742,8 +3742,8 @@ end
 	Will throw an error if the Tome is in the middle of being destroyed.
 
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:OnDestroy(function()
 		print("This Tome has finished destroying itself")
@@ -3753,10 +3753,10 @@ end
 	```
 	
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local unattachCallback: () -> () = newTome:OnDestroy(function()
+	const unattachCallback: () -> () = newTome:OnDestroy(function()
 		print("This Tome has finished destroying itself")
 	end)
 	
@@ -3775,7 +3775,7 @@ function Tome.OnDestroy(self: Tome, callback: (...any) -> (), onDestroyParams: O
 		error(string.format(TOME_IS_DESTROYING_ERROR_MESSAGE, "attach a destroy callback"))
 	end
 	
-	local destroyCallbackData: OnDestroyCallbackData = {
+	const destroyCallbackData: OnDestroyCallbackData = {
 		callback = callback,
 		OnDestroyParams = onDestroyParams or {
 			Synchronous = true,
@@ -3785,7 +3785,7 @@ function Tome.OnDestroy(self: Tome, callback: (...any) -> (), onDestroyParams: O
 	table.insert(self.__destroyCallbacks, destroyCallbackData)
 	
 	return function()
-		local index: number? = table.find(self.__destroyCallbacks, destroyCallbackData)
+		const index: number? = table.find(self.__destroyCallbacks, destroyCallbackData)
 		if index then
 			table.remove(self.__destroyCallbacks, index)
 		end
@@ -3812,8 +3812,8 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	-- add a cube to the Tome
 	newTome:Add(workspace.Cube)
@@ -3839,8 +3839,8 @@ function Tome.Destroy(self: Tome, ...: any) : ()
 	self.__destroying = false
 	
 	for index: number, callbackData: OnDestroyCallbackData in self.__destroyCallbacks do
-		local callback: (...any) -> () = callbackData.callback
-		local onDestroyParams: OnDestroyParams = callbackData.OnDestroyParams
+		const callback: (...any) -> () = callbackData.callback
+		const onDestroyParams: OnDestroyParams = callbackData.OnDestroyParams
 		
 		if onDestroyParams.Synchronous then
 			callback(...)
@@ -3868,8 +3868,8 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:Add(function()
 		print("Tome destroyed")
@@ -3895,10 +3895,10 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local part: Part = newTome + workspace.Part -- adds the part to the Tome
+	const part: Part = newTome + workspace.Part -- adds the part to the Tome
 	print(part:GetFullName())
 	```
 	
@@ -3919,13 +3919,13 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
-	local part: Part = newTome + workspace.Part
+	const part: Part = newTome + workspace.Part
 	print(newTome:Contains(part)) --> true
 	
-	local part: Part = newTome - workspace.Part
+	const part: Part = newTome - workspace.Part
 	print(newTome:Contains(part)) --> false
 	```
 	
@@ -3946,8 +3946,8 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:Add(workspace.Part)
 	newTome:Add(workspace.Part2)
@@ -3977,8 +3977,8 @@ end
 	
 	Example(s):
 	```luau
-	local Tome = require("../Path/To/Tome")
-	local newTome = Tome.new()
+	const Tome = require("../Path/To/Tome")
+	const newTome = Tome.new()
 	
 	newTome:Add(workspace.Part)
 	newTome:Add(workspace.Part2)
@@ -3994,7 +3994,7 @@ end
 ]]
 function Tome.__iter(self: Tome) : () -> (any, DestroyMethod)
 	local currentObject: any = nil
-	local objects: {[any]: DestroyMethod} = self.__objects
+	const objects: {[any]: DestroyMethod} = self.__objects
 	
 	return function()
 		currentObject = next(objects, currentObject)
